@@ -11,18 +11,16 @@
   const userEmailEl = qs('#userEmail');
   const userPicEl = qs('#userPic');
   const signOutBtn = qs('#btnSignOut');
-
   const toastEl = qs('#toast');
 
-  // Modal elements
   const modal = qs('#modal');
   const outcomeSel = qs('#outcome');
   const remarkInput = qs('#remark');
   const markInfo = qs('#markInfo');
   const btnCancel = qs('#btnCancel');
   const btnSubmit = qs('#btnSubmit');
-  let modalContext = null; // {rowIndex, dateISO, day, clientName}
 
+  let modalContext = null;
   let idToken = null;
   let userInfo = null;
 
@@ -43,10 +41,8 @@
   async function handleCredentialResponse(resp) {
     try {
       idToken = resp.credential;
-      // Verify / WhoAmI
       const who = await apiGET('me');
       userInfo = who.user;
-      // UI
       userEmailEl.textContent = userInfo.email;
       userPicEl.src = userInfo.picture || '';
       loginView.classList.add('hidden');
@@ -60,19 +56,21 @@
   // ---------- API ----------
   async function apiGET(path) {
     const url = `${CFG.GAS_BASE}?path=${encodeURIComponent(path)}&id_token=${encodeURIComponent(idToken)}`;
-    const res = await fetch(url, { method:'GET', credentials:'omit' });
+    const res = await fetch(url);
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'GET failed');
     return json;
   }
+
   async function apiPOST(path, body) {
     const res = await fetch(CFG.GAS_BASE, {
-      method:'POST',
-      mode:'no-cors',      
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path, id_token: idToken, ...body }),
-      credentials:'omit'
+      body: JSON.stringify({ path, id_token: idToken, ...body })
     });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'POST failed');
+    return json;
   }
 
   // ---------- Load Due ----------
@@ -86,14 +84,10 @@
     todayTag.textContent = today.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 
     const items = data.items || [];
-
-    // Counters
     qs('#countDue').textContent = items.length;
-    qs('#countOverdue').textContent = items.filter(it => {
-      // overdue if smallest call date < today
-      const c = it.resolvedCallDate ? new Date(it.resolvedCallDate) : null;
-      return c && c < today;
-    }).length;
+    qs('#countOverdue').textContent = items.filter(it =>
+      it.dueCalls.some(d => new Date(d.callDate) < today)
+    ).length;
 
     if (!items.length) {
       emptyState.classList.remove('hidden');
@@ -110,62 +104,64 @@
 
       const calls = document.createElement('div');
       calls.className = 'calls';
-      const labels = ['Call-1','Call-2','Call-3','Call-4'];
-      it.calls.forEach((d, idx) => {
-        const span = document.createElement('span');
-        span.className = 'tag';
-        span.textContent = `${labels[idx]}: ${d || '—'}`;
-        calls.appendChild(span);
-      });
 
-      const btn = document.createElement('button');
-      btn.className = 'btn primary';
-      btn.textContent = 'Call Response';
-      btn.addEventListener('click', () => openModal(it, todayISO));
+      // Create a date button for each due/overdue call
+      it.dueCalls.forEach(dc => {
+        const btn = document.createElement('button');
+        btn.className = 'btn light';
+        btn.textContent = new Date(dc.callDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+        btn.title = `Call-${dc.callN} (${dc.callDate})`;
+        btn.addEventListener('click', () => openModal(it, dc, todayISO));
+        calls.appendChild(btn);
+      });
 
       card.appendChild(client);
       card.appendChild(calls);
-      card.appendChild(btn);
       cardsEl.appendChild(card);
     }
   }
 
   // ---------- Modal ----------
-  function openModal(item, todayISO) {
+  function openModal(item, dueCall, todayISO) {
     modalContext = {
       rowIndex: item.rowIndex,
       dateISO: todayISO,
       day: item.dayToMark,
-      clientName: item.clientName
+      callN: dueCall.callN,
+      clientName: item.clientName,
+      callDate: dueCall.callDate
     };
-    qs('#modalTitle').textContent = `Call Response — ${item.clientName}`;
+    qs('#modalTitle').textContent = `Follow-up for ${item.clientName}`;
     remarkInput.value = '';
     outcomeSel.value = 'OK';
-    markInfo.textContent = `Will mark column for day ${item.dayToMark} (${item.dayColA1}).`;
+    markInfo.textContent = `Call-${dueCall.callN} | Scheduled: ${dueCall.callDate} | Will mark today's column (${item.dayColA1}).`;
     modal.classList.remove('hidden');
   }
+
   btnCancel.addEventListener('click', () => {
     modal.classList.add('hidden');
     modalContext = null;
   });
+
   btnSubmit.addEventListener('click', async () => {
     if (!modalContext) return;
     const outcome = outcomeSel.value;
     const remark = remarkInput.value.trim();
-    if (outcome !== 'OK' && remark.length === 0) {
-      return showToast('Remark is required for non-OK outcomes.');
-    }
+    if (outcome !== 'OK' && remark.length === 0)
+      return showToast('Remark required for non-OK outcomes.');
+
     try {
       await apiPOST('mark', {
         rowIndex: modalContext.rowIndex,
         date: modalContext.dateISO,
         outcome,
         remark,
+        callN: modalContext.callN
       });
-      showToast('Saved.');
+      showToast(`Marked Call-${modalContext.callN} done.`);
       modal.classList.add('hidden');
       modalContext = null;
-      await loadDue(); // refresh list
+      await loadDue();
     } catch (err) {
       showToast(err.message || String(err));
     }
