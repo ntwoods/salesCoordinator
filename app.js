@@ -65,12 +65,10 @@
   async function apiPOST(path, body) {
     const res = await fetch(CFG.GAS_BASE, {
       method: 'POST',
+      mode: 'no-cors',      
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path, id_token: idToken, ...body })
     });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error || 'POST failed');
-    return json;
   }
 
   // ---------- Load Due ----------
