@@ -22,6 +22,18 @@ body{
   background: var(--card); box-shadow: var(--shadow); border-radius: var(--radius);
   padding: 28px; width: 100%; max-width: 460px;
 }
+.calls .btn.light {
+  font-size: 13px;
+  padding: 6px 10px;
+  background: #ebf2ff;
+  border: 1px solid #c7ddff;
+  color: #1e3a8a;
+}
+.calls .btn.light:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
 .login-card h1{ margin: 0 0 8px; }
 .muted{ color: var(--muted); }
 .small{ font-size: 12px; }
