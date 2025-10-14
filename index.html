@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SC Follow-ups | NT Woods</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div id="app">
+
+    <!-- Login Screen -->
+    <section id="loginView" class="center">
+      <div class="card login-card">
+        <h1>Sales Coordinator Login</h1>
+        <p class="muted">Sign in with your NT Woods Google account to continue.</p>
+        <div id="g_id_signin"></div>
+        <div id="loginError" class="error hidden"></div>
+      </div>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="mainView" class="hidden">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">NT</div>
+          <div class="titles">
+            <h2>SC Follow-ups</h2>
+            <div id="todayTag" class="muted"></div>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="badge"><span id="countDue">0</span> Due</div>
+          <div class="badge secondary"><span id="countOverdue">0</span> Overdue</div>
+          <div class="profile">
+            <img id="userPic" alt="">
+            <div id="userEmail"></div>
+            <button id="btnSignOut" class="link">Sign out</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="content">
+        <div id="cards" class="grid"></div>
+        <div id="emptyState" class="hidden empty">No follow-ups due. 🎉</div>
+      </main>
+    </section>
+
+    <!-- Modal -->
+    <div id="modal" class="modal hidden">
+      <div class="modal-content">
+        <h3 id="modalTitle">Call Response</h3>
+        <div class="form">
+          <label>Outcome</label>
+          <select id="outcome">
+            <option value="OK">OK (Spoke)</option>
+            <option value="CB">CB (Call Back)</option>
+            <option value="NA">NA (Not Available)</option>
+            <option value="SW">SW (Switched Off)</option>
+            <option value="RN">RN (Wrong Number)</option>
+          </select>
+
+          <label>Remark <span class="muted">(required for non-OK)</span></label>
+          <textarea id="remark" rows="4" placeholder="Short remark..."></textarea>
+
+          <div id="markInfo" class="muted small"></div>
+        </div>
+        <div class="actions">
+          <button id="btnCancel" class="btn light">Cancel</button>
+          <button id="btnSubmit" class="btn primary">Submit</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script>
+    window.APP_CONFIG = {
+      CLIENT_ID: '360849757137-agopfs0m8rgmcj541ucpg22btep5olt3.apps.googleusercontent.com',
+      GAS_BASE: 'https://script.google.com/macros/s/AKfycbwtpfLP4Tj6jbizsxIJ_AgOnvlWl587QZsCdvhKKfS8uYZNwyjhHKXWp_i7uyAXzbDZ/exec'
+      // e.g. 'https://script.google.com/macros/s/AKfycb.../exec'
+    };
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
