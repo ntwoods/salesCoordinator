@@ -80,6 +80,38 @@
     });
   }
 
+  let autoRefreshTimer = null;
+let autoRefreshPaused = false;
+
+// Start auto refresh (runs every 30s)
+function startAutoRefresh() {
+  stopAutoRefresh(); // clear previous interval
+  if (autoRefreshPaused) return; // do not start when modal open
+  autoRefreshTimer = setInterval(() => {
+    if (!autoRefreshPaused) {
+      loadDue('silent'); // 'silent' to prevent loader flicker
+    }
+  }, 30000);
+}
+
+// Stop auto refresh manually
+function stopAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = null;
+}
+
+// Pause when modal opens
+function pauseAutoRefresh() {
+  autoRefreshPaused = true;
+  stopAutoRefresh();
+}
+
+// Resume when modal closes
+function resumeAutoRefresh() {
+  autoRefreshPaused = false;
+  startAutoRefresh();
+}
+
   // ---------- Week/SF window helpers ----------
   function monthLastDate(d){
     const dt = new Date(d.getFullYear(), d.getMonth()+1, 0);
