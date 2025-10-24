@@ -240,6 +240,7 @@ function resumeAutoRefresh() {
 
   // ---------- Modal ----------
   function openModal(item, dueCall, todayISO) {
+    pauseAutoRefresh();
     modalContext = {
       rowIndex: item.rowIndex,
       dateISO: todayISO,        // aaj ke mark ke liye
