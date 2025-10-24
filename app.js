@@ -226,6 +226,7 @@ function resumeAutoRefresh() {
 
     qs('#countDue').textContent = shown;
     if (!shown) emptyState.classList.remove('hidden');
+    startAutoRefresh();
   }
 
   function formatDHMS(ms){
