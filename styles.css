@@ -13,7 +13,8 @@
 html, body{ height: 100%; }
 body{
   margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color: var(--text); background: radial-gradient(1200px 600px at 20% -10%, #eef5ff, #ffffff 40%), linear-gradient(180deg,#ffffff 0%, #eef5ff 100%);
+  color: var(--text);
+  background: radial-gradient(1200px 600px at 20% -10%, #eef5ff, #ffffff 40%), linear-gradient(180deg,#ffffff 0%, #eef5ff 100%);
 }
 .hidden{ display:none !important; }
 .center{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px; }
@@ -21,7 +22,6 @@ body{
 .card{
   background: var(--card); box-shadow: var(--shadow); border-radius: var(--radius);
   padding: 28px; width: 100%; max-width: 460px;
-  transform: translateZ(0); /* makes shadow crisp */
 }
 
 .login-card h1{ margin: 0 0 8px; }
@@ -104,7 +104,7 @@ body{
 .loader-text{ color:#1d4ed8; font-weight:600; }
 @keyframes spin{ to{ transform: rotate(360deg) } }
 
-/* Date buttons styling tweak */
+/* Date buttons */
 .calls .btn.light {
   font-size: 13px;
   padding: 6px 10px;
@@ -117,7 +117,7 @@ body{
   border-color: #93c5fd;
 }
 
-/* Countdown chip */
+/* Countdown chip (only SF) */
 .countdown {
   position:absolute; right:12px; top:12px;
   background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;
