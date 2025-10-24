@@ -2,12 +2,13 @@
 (function(){
   const CFG = window.APP_CONFIG;
   const qs = (sel) => document.querySelector(sel);
+
+  // DOM
   const loginView = qs('#loginView');
   const mainView = qs('#mainView');
   const cardsEl = qs('#cards');
   const emptyState = qs('#emptyState');
   const todayTag = qs('#todayTag');
-
   const userEmailEl = qs('#userEmail');
   const userPicEl = qs('#userPic');
   const signOutBtn = qs('#btnSignOut');
@@ -20,8 +21,6 @@
   const markInfo = qs('#markInfo');
   const btnCancel = qs('#btnCancel');
   const btnSubmit = qs('#btnSubmit');
-
-  // New controls
   const orBlock = qs('#orBlock');
   const orFile = qs('#orFile');
   const sfBlock = qs('#sfBlock');
@@ -64,7 +63,7 @@
     }
   }
 
-  // ---------- API ----------
+  // ---------- API helpers ----------
   async function apiGET(path) {
     const url = `${CFG.GAS_BASE}?path=${encodeURIComponent(path)}&id_token=${encodeURIComponent(idToken)}`;
     const res = await fetch(url);
@@ -72,8 +71,6 @@
     if (!json.ok) throw new Error(json.error || 'GET failed');
     return json;
   }
-
-  // For JSON payloads (including base64 file)
   async function apiPOST(path, body) {
     await fetch(CFG.GAS_BASE, {
       method: 'POST',
@@ -83,26 +80,25 @@
     });
   }
 
-  // ---------- Helpers for week-window ----------
+  // ---------- Week/SF window helpers ----------
   function monthLastDate(d){
     const dt = new Date(d.getFullYear(), d.getMonth()+1, 0);
     dt.setHours(23,59,59,999);
     return dt;
   }
   function weekWindowEnd(dateObj){
-    // 1-7 -> 7, 8-14 -> 14, 15-22 -> 22, 23-end -> end
     const dd = dateObj.getDate();
     const endDay = dd <= 7 ? 7 : dd <= 14 ? 14 : dd <= 22 ? 22 : monthLastDate(dateObj).getDate();
-    const end = new Date(dateObj.getFullYear(), dateObj.getMonth(), endDay, 23,59,59,999);
-    return end;
+    return new Date(dateObj.getFullYear(), dateObj.getMonth(), endDay, 23,59,59,999);
+  }
+  function hasTimeComponent(dt){
+    return dt instanceof Date && !isNaN(dt) && (dt.getHours() + dt.getMinutes() + dt.getSeconds()) !== 0;
   }
 
   // ---------- Load Due ----------
   async function loadDue() {
-    // clear timers
     countdownTimers.forEach(clearInterval);
     countdownTimers = [];
-
     cardsEl.innerHTML = '';
     emptyState.classList.add('hidden');
 
@@ -110,21 +106,23 @@
     const data = await apiGET('due');
     toggleLoader(false);
 
-    const todayISO = data.today;               // "YYYY-MM-DD" (IST midnight)
-    const today = new Date(todayISO);          // Local Date at 00:00 IST-equivalent
+    const todayISO = data.today;
+    const today = new Date(todayISO);
     todayTag.textContent = today.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 
     const items = data.items || [];
-    qs('#countDue').textContent = items.length;
-    qs('#countOverdue').textContent = items.filter(it =>
-      it.dueCalls.some(d => new Date(d.callDate) < today)
-    ).length;
 
-    if (!items.length) {
-      emptyState.classList.remove('hidden');
-      return;
-    }
+    // Overdue count (based on <= today but before their active windows)
+    qs('#countOverdue').textContent = items.reduce((acc,it)=>{
+      const anyOver = (it.dueCalls||[]).some(dc=>{
+        const base = new Date(dc.callDate+'T00:00:00');
+        const end = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
+        return (new Date() > end);
+      });
+      return acc + (anyOver?1:0);
+    },0);
 
+    let shown = 0;
     for (const it of items) {
       const card = document.createElement('div');
       card.className = 'card-sm';
@@ -136,36 +134,41 @@
       const calls = document.createElement('div');
       calls.className = 'calls';
 
-      // Create a date button for each due/overdue call
-      it.dueCalls.forEach(dc => {
+      let activeCount = 0;
+
+      (it.dueCalls || []).forEach(dc => {
         const dateObj = new Date(dc.callDate + 'T00:00:00');
+
+        // Window: SF datetime (if present) else week-window
+        const windowEnd = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(dateObj);
+        const now = new Date();
+        const active = now.getTime() <= windowEnd.getTime();
+
         const btn = document.createElement('button');
         btn.className = 'btn light';
         btn.textContent = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-        btn.title = `Call-${dc.callN} (${dc.callDate})`;
-
-        // Active till week-window end
-        const windowEnd = weekWindowEnd(dateObj);
-        const now = new Date();
-        const active = now.getTime() <= windowEnd.getTime();
+        btn.title = `Call-${dc.callN} (${dc.callDate})` + (dc.sfAt ? ` | until ${new Date(dc.sfAt).toLocaleString('en-IN')}` : '');
 
         if (!active) {
           btn.disabled = true;
           btn.classList.add('disabled');
           btn.title += ' (expired)';
         } else {
+          activeCount++;
           btn.addEventListener('click', () => openModal(it, dc, todayISO));
         }
+
         calls.appendChild(btn);
       });
 
-      // Countdown (if any upcoming scheduled follow-up datetime exists)
-      if (it.upcoming && it.upcoming.when) {
+      // Show countdown ONLY if any SF (future datetime with time) exists
+      const sfFuture = (it.sfFuture || null);
+      if (sfFuture) {
         const chip = document.createElement('div');
         chip.className = 'countdown';
         card.appendChild(chip);
 
-        const target = new Date(it.upcoming.when);
+        const target = new Date(sfFuture);
         const tick = () => {
           const now = new Date();
           const diff = target - now;
@@ -181,10 +184,16 @@
         countdownTimers.push(t);
       }
 
-      card.appendChild(client);
-      card.appendChild(calls);
-      cardsEl.appendChild(card);
+      if (activeCount > 0) {
+        card.appendChild(client);
+        card.appendChild(calls);
+        cardsEl.appendChild(card);
+        shown++;
+      }
     }
+
+    qs('#countDue').textContent = shown;
+    if (!shown) emptyState.classList.remove('hidden');
   }
 
   function formatDHMS(ms){
@@ -200,21 +209,18 @@
   function openModal(item, dueCall, todayISO) {
     modalContext = {
       rowIndex: item.rowIndex,
-      dateISO: todayISO,
-      day: item.dayToMark,
+      dateISO: todayISO,        // aaj ke mark ke liye
       callN: dueCall.callN,
       clientName: item.clientName,
       callDate: dueCall.callDate // planned date (ISO)
     };
     qs('#modalTitle').textContent = `Follow-up for ${item.clientName}`;
     remarkInput.value = '';
-    outcomeSel.value = 'OK';
-    markInfo.textContent = `Call-${dueCall.callN} | Scheduled: ${dueCall.callDate} | Will mark today's column (${item.dayColA1}).`;
+    outcomeSel.value = 'OR';
+    markInfo.textContent = `Call-${dueCall.callN} | Scheduled: ${dueCall.callDate}`;
 
-    // reset dynamic blocks
     orBlock.classList.add('hidden'); orFile.value = '';
     sfBlock.classList.add('hidden'); sfWhen.value = '';
-
     modal.classList.remove('hidden');
   }
 
@@ -224,9 +230,8 @@
     sfBlock.classList.toggle('hidden', v !== 'SF');
   });
 
-  btnCancel.addEventListener('click', () => {
-    modal.classList.add('hidden');
-    modalContext = null;
+  qs('#btnCancel').addEventListener('click', () => {
+    modal.classList.add('hidden'); modalContext = null;
   });
 
   btnSubmit.addEventListener('click', async () => {
@@ -235,43 +240,32 @@
     const outcome = outcomeSel.value;
     const remark = (remarkInput.value || '').trim();
 
-    if (outcome !== 'OK' && remark.length === 0 && outcome !== 'OR' && outcome !== 'SF')
-      return showToast('Remark required for non-OK outcomes.');
-
-    // Build payload
     let payload = {
       rowIndex: modalContext.rowIndex,
       date: modalContext.dateISO,
       outcome,
       remark,
       callN: modalContext.callN,
-      plannedDate: modalContext.callDate // for Activity Log
+      plannedDate: modalContext.callDate
     };
 
-    // OR: attach file as base64
     if (outcome === 'OR') {
       if (!orFile.files || !orFile.files[0]) return showToast('Please choose an order file.');
       const f = orFile.files[0];
       const base64 = await fileToBase64(f);
-      payload.orFile = {
-        name: f.name,
-        type: f.type || 'application/octet-stream',
-        base64
-      };
+      payload.orFile = { name: f.name, type: f.type || 'application/octet-stream', base64 };
     }
 
-    // SF: require datetime-local
     if (outcome === 'SF') {
-      if (!sfWhen.value) return showToast('Please select date & time.');
-      payload.scheduleAt = sfWhen.value; // e.g. 2025-10-05T17:30
+      if (!sfWhen.value) return showToast('Please select date & time for next follow-up.');
+      payload.scheduleAt = sfWhen.value; // 2025-10-26T17:30
     }
 
     try {
       toggleLoader(true);
       await apiPOST('mark', payload);
       showToast(`Saved: ${outcome}`);
-      modal.classList.add('hidden');
-      modalContext = null;
+      modal.classList.add('hidden'); modalContext = null;
       await loadDue();
     } catch (err) {
       showToast(err.message || String(err));
@@ -283,33 +277,20 @@
   // ---------- Sign out ----------
   signOutBtn.addEventListener('click', () => {
     google.accounts.id.disableAutoSelect();
-    idToken = null;
-    userInfo = null;
+    idToken = null; userInfo = null;
     cardsEl.innerHTML = '';
     mainView.classList.add('hidden');
     loginView.classList.remove('hidden');
   });
 
-  // ---------- Helpers ----------
-  function showError(sel, msg){
-    const el = qs(sel);
-    el.textContent = msg;
-    el.classList.remove('hidden');
-  }
-  function showToast(msg){
-    toastEl.textContent = msg;
-    toastEl.classList.remove('hidden');
-    setTimeout(() => toastEl.classList.add('hidden'), 2200);
-  }
+  // ---------- Utils ----------
+  function showError(sel, msg){ const el = qs(sel); el.textContent = msg; el.classList.remove('hidden'); }
+  function showToast(msg){ toastEl.textContent = msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'), 2200); }
   function toggleLoader(on){ appLoader.classList.toggle('hidden', !on); }
   function fileToBase64(file){
     return new Promise((resolve, reject) => {
       const fr = new FileReader();
-      fr.onload = () => {
-        const res = String(fr.result);
-        const comma = res.indexOf(',');
-        resolve(comma >= 0 ? res.slice(comma+1) : res);
-      };
+      fr.onload = () => { const s = String(fr.result); const i = s.indexOf(','); resolve(i>=0 ? s.slice(i+1) : s); };
       fr.onerror = () => reject(fr.error || new Error('File read error'));
       fr.readAsDataURL(file);
     });
