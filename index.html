@@ -13,6 +13,12 @@
 <body>
   <div id="app">
 
+    <!-- Global Loader -->
+    <div id="appLoader" class="app-loader hidden">
+      <div class="spinner"></div>
+      <div class="loader-text">Loading…</div>
+    </div>
+
     <!-- Login Screen -->
     <section id="loginView" class="center">
       <div class="card login-card">
@@ -54,6 +60,7 @@
     <div id="modal" class="modal hidden">
       <div class="modal-content">
         <h3 id="modalTitle">Call Response</h3>
+
         <div class="form">
           <label>Outcome</label>
           <select id="outcome">
@@ -62,13 +69,27 @@
             <option value="NA">NA (Not Available)</option>
             <option value="SW">SW (Switched Off)</option>
             <option value="RN">RN (Wrong Number)</option>
+            <option value="OR">OR (Order Received)</option>
+            <option value="NR">NR (No Requirement)</option>
+            <option value="SF">SF (Schedule Follow-up)</option>
           </select>
+
+          <div id="orBlock" class="hidden">
+            <label>Upload Order File</label>
+            <input id="orFile" type="file" />
+          </div>
+
+          <div id="sfBlock" class="hidden">
+            <label>Next Follow-up (Date & Time)</label>
+            <input id="sfWhen" type="datetime-local" />
+          </div>
 
           <label>Remark <span class="muted">(required for non-OK)</span></label>
           <textarea id="remark" rows="4" placeholder="Short remark..."></textarea>
 
           <div id="markInfo" class="muted small"></div>
         </div>
+
         <div class="actions">
           <button id="btnCancel" class="btn light">Cancel</button>
           <button id="btnSubmit" class="btn primary">Submit</button>
@@ -83,7 +104,6 @@
     window.APP_CONFIG = {
       CLIENT_ID: '360849757137-agopfs0m8rgmcj541ucpg22btep5olt3.apps.googleusercontent.com',
       GAS_BASE: 'https://script.google.com/macros/s/AKfycbwtpfLP4Tj6jbizsxIJ_AgOnvlWl587QZsCdvhKKfS8uYZNwyjhHKXWp_i7uyAXzbDZ/exec'
-      // e.g. 'https://script.google.com/macros/s/AKfycb.../exec'
     };
   </script>
   <script src="app.js"></script>
