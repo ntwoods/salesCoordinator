@@ -19,7 +19,7 @@
       <div class="loader-text">Loading…</div>
     </div>
 
-    <!-- Login Screen -->
+    <!-- Login -->
     <section id="loginView" class="center">
       <div class="card login-card">
         <h1>Sales Coordinator Login</h1>
@@ -29,7 +29,7 @@
       </div>
     </section>
 
-    <!-- Dashboard -->
+    <!-- Main -->
     <section id="mainView" class="hidden">
       <header class="topbar">
         <div class="brand">
@@ -52,7 +52,7 @@
 
       <main class="content">
         <div id="cards" class="grid"></div>
-        <div id="emptyState" class="hidden empty">No follow-ups due. 🎉</div>
+        <div id="emptyState" class="hidden empty">No active follow-ups. 🎉</div>
       </main>
     </section>
 
@@ -64,14 +64,9 @@
         <div class="form">
           <label>Outcome</label>
           <select id="outcome">
-            <option value="OK">OK (Spoke)</option>
-            <option value="CB">CB (Call Back)</option>
-            <option value="NA">NA (Not Available)</option>
-            <option value="SW">SW (Switched Off)</option>
-            <option value="RN">RN (Wrong Number)</option>
             <option value="OR">OR (Order Received)</option>
-            <option value="NR">NR (No Requirement)</option>
             <option value="SF">SF (Schedule Follow-up)</option>
+            <option value="NR">NR (No Requirement)</option>
           </select>
 
           <div id="orBlock" class="hidden">
@@ -84,7 +79,7 @@
             <input id="sfWhen" type="datetime-local" />
           </div>
 
-          <label>Remark <span class="muted">(required for non-OK)</span></label>
+          <label>Remark <span class="muted small">(optional)</span></label>
           <textarea id="remark" rows="4" placeholder="Short remark..."></textarea>
 
           <div id="markInfo" class="muted small"></div>
@@ -102,8 +97,8 @@
 
   <script>
     window.APP_CONFIG = {
-      CLIENT_ID: '360849757137-agopfs0m8rgmcj541ucpg22btep5olt3.apps.googleusercontent.com',
-      GAS_BASE: 'https://script.google.com/macros/s/AKfycbwtpfLP4Tj6jbizsxIJ_AgOnvlWl587QZsCdvhKKfS8uYZNwyjhHKXWp_i7uyAXzbDZ/exec'
+      CLIENT_ID: 'YOUR_GOOGLE_OAUTH_CLIENT_ID',
+      GAS_BASE: 'YOUR_DEPLOYED_WEB_APP_URL'
     };
   </script>
   <script src="app.js"></script>
