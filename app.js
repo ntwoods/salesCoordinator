@@ -266,11 +266,12 @@ function resumeAutoRefresh() {
 
   qs('#btnCancel').addEventListener('click', () => {
     modal.classList.add('hidden'); modalContext = null;
+    resumeAutoRefresh();    
   });
 
   btnSubmit.addEventListener('click', async () => {
     if (!modalContext) return;
-
+    resumeAutoRefresh();
     const outcome = outcomeSel.value;
     const remark = (remarkInput.value || '').trim();
 
