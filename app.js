@@ -46,7 +46,7 @@
       ux_mode: 'popup',
     });
     google.accounts.id.renderButton(
-      qs('#googleBtn'),
+      qs('#g_id_signin'),
       { theme: 'outline', size: 'large', width: 280 }
     );
   };
