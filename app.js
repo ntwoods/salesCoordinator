@@ -293,8 +293,8 @@
       if (!msgHandlerBound) { window.addEventListener('message', onChildMessage, false); msgHandlerBound = true; }
 
       // OR: disable submit until child confirms success
-      btnSubmit.disabled = true;
-      btnSubmit.classList.add('disabled');
+      btnSubmit.disabled = false;
+      btnSubmit.classList.add('enabled');
 
     } else if (v === 'NR') {
       // nothing to show; normal submit allowed
