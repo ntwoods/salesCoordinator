@@ -279,10 +279,19 @@
       });
       const punchURL = `https://ntwoods.github.io/ordertodispatch/orderPunch.html?${params.toString()}`;
       if (orFrame) orFrame.src = punchURL;
-      if (orFrameWrap) orFrameWrap.classList.remove('hidden');
-
+      if (orFrameWrap) {
+        orFrameWrap.classList.remove('hidden');
+        // Optional: force compact on very short screens
+        if (window.innerHeight < 760) {
+          orFrameWrap.querySelector('.iframe-host')?.classList.add('compact');
+        } else {
+          orFrameWrap.querySelector('.iframe-host')?.classList.remove('compact');
+        }
+      }
+      
       // Bind postMessage listener
       if (!msgHandlerBound) { window.addEventListener('message', onChildMessage, false); msgHandlerBound = true; }
+
 
       // For OR we will auto-close after success; disable manual submit to avoid premature mark
       btnSubmit.disabled = true;
