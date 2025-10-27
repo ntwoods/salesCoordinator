@@ -1,4 +1,5 @@
-:root{
+/* ---- Base Theme ---- */
+:root {
   --bg: #f6f9ff;
   --card: #fff;
   --text: #0f172a;
@@ -9,192 +10,206 @@
   --shadow: 0 16px 40px rgba(2,40,120,.12);
   --radius: 18px;
 }
-*{ box-sizing: border-box; }
-html, body{ height: 100%; }
-body{
-  margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+
+* { box-sizing: border-box; margin:0; padding:0; }
+html, body {
+  height: 100%;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: var(--text);
   background: radial-gradient(1200px 600px at 20% -10%, #eef5ff, #ffffff 40%), linear-gradient(180deg,#ffffff 0%, #eef5ff 100%);
-}
-.hidden{ display:none !important; }
-.center{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px; }
-
-.card{
-  background: var(--card); box-shadow: var(--shadow); border-radius: var(--radius);
-  padding: 28px; width: 100%; max-width: 460px;
+  display:flex; flex-direction:column;
 }
 
-.login-card h1{ margin: 0 0 8px; }
-.muted{ color: var(--muted); }
-.small{ font-size: 12px; }
-.error{ color: #b91c1c; margin-top: 10px; }
+/* ---- Global utility ---- */
+.hidden { display:none !important; }
+.muted { color:var(--muted); }
+.small { font-size:12px; }
+.error { color:#b91c1c; margin-top:10px; }
 
-.topbar{
+/* ---- Centered login ---- */
+.center {
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  min-height:100vh;
+}
+.login-card {
+  background:var(--card);
+  box-shadow:var(--shadow);
+  border-radius:var(--radius);
+  padding:40px 36px;
+  width:100%;
+  max-width:420px;
+  text-align:center;
+}
+.login-card h1{ margin-bottom:6px; }
+
+/* ---- Topbar ---- */
+.topbar {
   display:flex; align-items:center; justify-content:space-between;
-  padding: 16px 24px; background: #fff; box-shadow: var(--shadow); position: sticky; top:0; z-index: 50;
-  backdrop-filter: blur(6px);
+  padding:16px 24px;
+  background:#fff;
+  box-shadow:var(--shadow);
+  position:sticky; top:0; z-index:50;
 }
-.brand{ display:flex; align-items:center; gap:12px; }
-.logo{
-  width:42px; height:42px; border-radius:12px; background: linear-gradient(135deg,#3b82f6,#1d4ed8);
-  color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; letter-spacing:.5px;
+.brand { display:flex; align-items:center; gap:12px; }
+.logo {
+  width:42px; height:42px; border-radius:12px;
+  background:linear-gradient(135deg,#3b82f6,#1d4ed8);
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-weight:700; letter-spacing:.5px;
 }
 .titles h2{ margin:0; }
-.stats{ display:flex; align-items:center; gap:16px; }
-.badge{
-  background: var(--accent); color: var(--brand-700); padding:6px 10px; border-radius:999px; font-weight:600;
-}
-.badge.secondary{ background:#fff2d6; color:#9a6b00; }
+.stats{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
 .profile{ display:flex; align-items:center; gap:10px; }
-.profile img{ width:32px; height:32px; border-radius:50%; }
+.profile img{ width:32px; height:32px; border-radius:50%; object-fit:cover; }
 .link{ background:none; border:none; color:var(--brand); cursor:pointer; }
 
-.content{ padding: 24px; }
-.grid{
-  display:grid; grid-template-columns: repeat( auto-fill, minmax(280px, 1fr) );
-  gap: 18px;
+/* ---- Content ---- */
+.content {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  padding:24px;
+  width:100%;
+  max-width:1200px;
+  margin:0 auto;
 }
-.card-sm{
-  background:#fff; border-radius: 22px; box-shadow: var(--shadow);
-  padding:16px; display:flex; flex-direction:column; gap:12px; position:relative; overflow:hidden;
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:18px;
+  align-items:start;
+  justify-items:stretch;
 }
-.client{ font-weight: 700; }
+
+/* ---- Card ---- */
+.card-sm {
+  background:#fff;
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  transition:transform .1s ease;
+}
+.card-sm:hover{ transform:translateY(-3px); }
+.client{ font-weight:700; }
 .calls{ display:flex; flex-wrap:wrap; gap:8px; }
-.tag{ background:#f1f5ff; color:#1e40af; padding:4px 8px; border-radius:8px; font-size:12px; }
 .btn{
-  border:none; border-radius:12px; padding:10px 14px; font-weight:600; cursor:pointer; transition: transform .06s ease;
+  border:none; border-radius:12px;
+  padding:10px 14px; font-weight:600;
+  cursor:pointer; transition: transform .06s ease;
 }
 .btn:active{ transform: translateY(1px); }
 .btn.primary{ background:var(--brand); color:#fff; }
-.btn.primary:hover{ background: var(--brand-700); }
+.btn.primary:hover{ background:var(--brand-700); }
 .btn.light{ background:#eef2ff; color:#1d4ed8; }
 .btn.light:hover{ background:#dbeafe; }
 .btn.disabled, .btn:disabled{ opacity:.45; cursor:not-allowed; filter:grayscale(.3); }
 
-.empty{ color: var(--muted); text-align:center; padding:60px; }
+/* ---- Empty ---- */
+.empty {
+  color:var(--muted);
+  text-align:center;
+  padding:60px 20px;
+}
 
-.modal{
-  position:fixed; inset:0; background: rgba(15,23,42,.25);
+/* ---- Modal ---- */
+.modal {
+  position:fixed; inset:0;
+  background:rgba(15,23,42,.25);
   display:flex; align-items:center; justify-content:center;
 }
-.modal-content{
-  width:100%; max-width:620px; background:#fff; border-radius:20px; box-shadow: var(--shadow);
-  padding:22px; display:flex; flex-direction:column; gap:14px;
+.modal-content {
+  width:100%; max-width:640px;
+  background:#fff;
+  border-radius:20px;
+  box-shadow:var(--shadow);
+  padding:22px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  max-height:95vh;
+  overflow:auto;
 }
-.form label{ font-size: 12px; color:var(--muted); }
-.form select, .form textarea, .form input[type="datetime-local"], .form input[type="file"]{
-  width:100%; border:1px solid #dde3f7; border-radius:10px; padding:10px; font:inherit; resize: vertical;
+
+/* ---- Form controls ---- */
+.form label{ font-size:12px; color:var(--muted); }
+.form select,
+.form textarea,
+.form input[type="datetime-local"],
+.form input[type="file"]{
+  width:100%;
+  border:1px solid #dde3f7;
+  border-radius:10px;
+  padding:10px;
+  font:inherit;
+  resize:vertical;
 }
 .actions{ display:flex; justify-content:flex-end; gap:8px; }
 
-.toast{
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  background:#111827; color:#fff; padding:10px 14px; border-radius:999px; box-shadow: var(--shadow); z-index:9999;
+/* ---- Toast ---- */
+.toast {
+  position:fixed;
+  bottom:24px; left:50%;
+  transform:translateX(-50%);
+  background:#111827; color:#fff;
+  padding:10px 14px;
+  border-radius:999px;
+  box-shadow:var(--shadow);
+  z-index:9999;
 }
 
-/* Loader */
-.app-loader{
-  position: fixed; inset:0; background: rgba(255,255,255,.6); backdrop-filter: blur(4px);
-  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; z-index:1000;
+/* ---- Loader ---- */
+.app-loader {
+  position:fixed; inset:0;
+  background:rgba(255,255,255,.6);
+  backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:8px; z-index:1000;
 }
-.spinner{
+.spinner {
   width:42px; height:42px; border-radius:50%;
-  border:4px solid #c7ddff; border-top-color:#1d4ed8; animation: spin 0.9s linear infinite;
+  border:4px solid #c7ddff; border-top-color:#1d4ed8;
+  animation:spin .9s linear infinite;
 }
+@keyframes spin{ to{transform:rotate(360deg);} }
 .loader-text{ color:#1d4ed8; font-weight:600; }
-@keyframes spin{ to{ transform: rotate(360deg) } }
 
-/* Date buttons */
-.calls .btn.light {
-  font-size: 13px;
-  padding: 6px 10px;
-  background: #ebf2ff;
-  border: 1px solid #c7ddff;
-  color: #1e3a8a;
-}
-.calls .btn.light:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
-}
-
-/* Countdown chip (only SF) */
+/* ---- Countdown ---- */
 .countdown {
   position:absolute; right:12px; top:12px;
-  background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;
-  padding:4px 8px; border-radius:999px; font-size:12px; font-weight:600;
+  background:#fff7ed; color:#9a3412;
+  border:1px solid #fed7aa;
+  padding:4px 8px; border-radius:999px;
+  font-size:12px; font-weight:600;
 }
-.countdown.overdue{ background:#fee2e2; color:#991b1b; border-color:#fecaca; }
+.countdown.overdue {
+  background:#fee2e2; color:#991b1b; border-color:#fecaca;
+}
 
-/* NEW: Order Punch iframe host */
+/* ---- Iframe Host ---- */
 .iframe-host {
-  width: 100%;
-  height: 70vh;              /* comfortable height inside modal */
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
+  width:100%;
+  height:68vh;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
 }
-.iframe-host > iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-}
-
-/* === Order Punch iframe: responsive fit ===
-   Cross-origin content ko fit karne ke liye hum iframe ko scale kar rahe hain.
-   Width/height ko inverse factor se badhate hain taaki clipping na ho.
-*/
-
-/* Default (desktop-ish): no scale */
-.iframe-host > iframe {
-  transform: none;
-  transform-origin: top left;
+.iframe-host>iframe {
+  width:100%; height:100%;
+  border:0;
+  transform-origin:top center;
 }
 
-/* Medium screens / shorter heights */
-@media (max-height: 900px) {
-  .iframe-host { height: 66vh; }
-  .iframe-host > iframe {
-    transform: scale(0.92);
-    width: calc(100% / 0.92);
-    height: calc(100% / 0.92);
-  }
+/* ---- Responsive Center Fix ---- */
+@media (max-width:800px) {
+  .login-card{padding:28px 22px;}
+  .content{padding:16px;}
 }
-
-/* Smaller laptops */
-@media (max-height: 800px) {
-  .iframe-host { height: 64vh; }
-  .iframe-host > iframe {
-    transform: scale(0.88);
-    width: calc(100% / 0.88);
-    height: calc(100% / 0.88);
-  }
-}
-
-/* Tight vertical space (e.g., 13" / 768h) */
-@media (max-height: 760px) {
-  .iframe-host { height: 62vh; }
-  .iframe-host > iframe {
-    transform: scale(0.84);
-    width: calc(100% / 0.84);
-    height: calc(100% / 0.84);
-  }
-}
-
-/* Very tight (e.g., small laptops) */
-@media (max-height: 700px) {
-  .iframe-host { height: 60vh; }
-  .iframe-host > iframe {
-    transform: scale(0.8);
-    width: calc(100% / 0.8);
-    height: calc(100% / 0.8);
-  }
-}
-
-/* Optional: a compact class we can toggle from JS if needed */
-.iframe-host.compact > iframe {
-  transform: scale(0.85);
-  width: calc(100% / 0.85);
-  height: calc(100% / 0.85);
-}
-
