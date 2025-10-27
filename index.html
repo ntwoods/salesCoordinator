@@ -64,14 +64,25 @@
         <div class="form">
           <label>Outcome</label>
           <select id="outcome">
+            <!-- NEW: Placeholder default -->
+            <option value="" selected disabled hidden>Select An Option</option>
             <option value="OR">OR (Order Received)</option>
             <option value="SF">SF (Schedule Follow-up)</option>
             <option value="NR">NR (No Requirement)</option>
           </select>
 
+          <!-- Legacy OR upload block kept but hidden by logic -->
           <div id="orBlock" class="hidden">
             <label>Upload Order File</label>
             <input id="orFile" type="file" />
+          </div>
+
+          <!-- NEW: OR iframe container -->
+          <div id="orFrameWrap" class="hidden">
+            <div class="muted" style="margin:6px 0 8px;">Please fill Order Punch form below. On success, this modal will auto-close.</div>
+            <div class="iframe-host">
+              <iframe id="orFrame" title="Order Punch" src="" loading="lazy" referrerpolicy="no-referrer"></iframe>
+            </div>
           </div>
 
           <div id="sfBlock" class="hidden">
