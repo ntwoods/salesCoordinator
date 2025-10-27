@@ -315,11 +315,6 @@
     const outcome = outcomeSel.value;
     if (!outcome) { showToast('Please select an outcome'); return; }
 
-    if (outcome === 'OR' && !childDone) { // guard
-      showToast('Please submit the Order Punch form first');
-      return;
-    }
-
     const remark = (remarkInput.value || '').trim();
 
     const payload = {
