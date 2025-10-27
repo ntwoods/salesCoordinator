@@ -39,12 +39,13 @@
 
   // ---------- Google Sign-in ----------
   window.onload = () => {
-    google.accounts.id.initialize({
-      client_id: CFG.CLIENT_ID,
-      callback: handleCredentialResponse,
-      auto_select: false,
-      ux_mode: 'popup',
-    });
+  google.accounts.id.initialize({
+    client_id: CFG.CLIENT_ID,
+    callback: handleCredentialResponse,
+    auto_select: false,
+    ux_mode: 'redirect'   // <-- popup ki jagah redirect
+  });
+
     google.accounts.id.renderButton(
       qs('#g_id_signin'),
       { theme: 'outline', size: 'large', width: 280 }
