@@ -139,3 +139,62 @@ body{
   height: 100%;
   border: 0;
 }
+
+/* === Order Punch iframe: responsive fit ===
+   Cross-origin content ko fit karne ke liye hum iframe ko scale kar rahe hain.
+   Width/height ko inverse factor se badhate hain taaki clipping na ho.
+*/
+
+/* Default (desktop-ish): no scale */
+.iframe-host > iframe {
+  transform: none;
+  transform-origin: top left;
+}
+
+/* Medium screens / shorter heights */
+@media (max-height: 900px) {
+  .iframe-host { height: 66vh; }
+  .iframe-host > iframe {
+    transform: scale(0.92);
+    width: calc(100% / 0.92);
+    height: calc(100% / 0.92);
+  }
+}
+
+/* Smaller laptops */
+@media (max-height: 800px) {
+  .iframe-host { height: 64vh; }
+  .iframe-host > iframe {
+    transform: scale(0.88);
+    width: calc(100% / 0.88);
+    height: calc(100% / 0.88);
+  }
+}
+
+/* Tight vertical space (e.g., 13" / 768h) */
+@media (max-height: 760px) {
+  .iframe-host { height: 62vh; }
+  .iframe-host > iframe {
+    transform: scale(0.84);
+    width: calc(100% / 0.84);
+    height: calc(100% / 0.84);
+  }
+}
+
+/* Very tight (e.g., small laptops) */
+@media (max-height: 700px) {
+  .iframe-host { height: 60vh; }
+  .iframe-host > iframe {
+    transform: scale(0.8);
+    width: calc(100% / 0.8);
+    height: calc(100% / 0.8);
+  }
+}
+
+/* Optional: a compact class we can toggle from JS if needed */
+.iframe-host.compact > iframe {
+  transform: scale(0.85);
+  width: calc(100% / 0.85);
+  height: calc(100% / 0.85);
+}
+
