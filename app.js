@@ -21,15 +21,23 @@
   const markInfo = qs('#markInfo');
   const btnCancel = qs('#btnCancel');
   const btnSubmit = qs('#btnSubmit');
-  const orBlock = qs('#orBlock');
-  const orFile = qs('#orFile');
+  const orBlock = qs('#orBlock');   // legacy upload (kept hidden)
+  const orFile = qs('#orFile');     // legacy input
   const sfBlock = qs('#sfBlock');
   const sfWhen = qs('#sfWhen');
+
+  // NEW: iframe refs
+  const orFrameWrap = qs('#orFrameWrap');
+  const orFrame = qs('#orFrame');
 
   let modalContext = null;
   let idToken = null;
   let userInfo = null;
   let countdownTimers = [];
+
+  // runtime flags for iframe handshake
+  let childDone = false;
+  let msgHandlerBound = false;
 
   // ---------- Google Sign-in ----------
   window.onload = () => {
@@ -72,6 +80,7 @@
     return json;
   }
   async function apiPOST(path, body) {
+    // fire-and-forget (no-cors), per your requirement
     await fetch(CFG.GAS_BASE, {
       method: 'POST',
       mode: 'no-cors',
@@ -81,38 +90,20 @@
   }
 
   let autoRefreshTimer = null;
-let autoRefreshPaused = false;
+  let autoRefreshPaused = false;
 
-// Start auto refresh (runs every 30s)
-function startAutoRefresh() {
-  stopAutoRefresh(); // clear previous interval
-  if (autoRefreshPaused) return; // do not start when modal open
-  autoRefreshTimer = setInterval(() => {
-    if (!autoRefreshPaused) {
-      loadDue('silent'); // 'silent' to prevent loader flicker
-    }
-  }, 30000);
-}
+  function startAutoRefresh() {
+    stopAutoRefresh();
+    if (autoRefreshPaused) return;
+    autoRefreshTimer = setInterval(() => {
+      if (!autoRefreshPaused) loadDue('silent');
+    }, 30000);
+  }
+  function stopAutoRefresh() { if (autoRefreshTimer) clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  function pauseAutoRefresh(){ autoRefreshPaused = true; stopAutoRefresh(); }
+  function resumeAutoRefresh(){ autoRefreshPaused = false; startAutoRefresh(); }
 
-// Stop auto refresh manually
-function stopAutoRefresh() {
-  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-  autoRefreshTimer = null;
-}
-
-// Pause when modal opens
-function pauseAutoRefresh() {
-  autoRefreshPaused = true;
-  stopAutoRefresh();
-}
-
-// Resume when modal closes
-function resumeAutoRefresh() {
-  autoRefreshPaused = false;
-  startAutoRefresh();
-}
-
-  // ---------- Week/SF window helpers ----------
+  // ---------- Helpers ----------
   function monthLastDate(d){
     const dt = new Date(d.getFullYear(), d.getMonth()+1, 0);
     dt.setHours(23,59,59,999);
@@ -128,15 +119,15 @@ function resumeAutoRefresh() {
   }
 
   // ---------- Load Due ----------
-  async function loadDue() {
+  async function loadDue(mode) {
     countdownTimers.forEach(clearInterval);
     countdownTimers = [];
     cardsEl.innerHTML = '';
     emptyState.classList.add('hidden');
 
-    toggleLoader(true);
+    if (mode !== 'silent') toggleLoader(true);
     const data = await apiGET('due');
-    toggleLoader(false);
+    if (mode !== 'silent') toggleLoader(false);
 
     const todayISO = data.today;
     const today = new Date(todayISO);
@@ -144,7 +135,6 @@ function resumeAutoRefresh() {
 
     const items = data.items || [];
 
-    // Overdue count (based on <= today but before their active windows)
     qs('#countOverdue').textContent = items.reduce((acc,it)=>{
       const anyOver = (it.dueCalls||[]).some(dc=>{
         const base = new Date(dc.callDate+'T00:00:00');
@@ -171,7 +161,6 @@ function resumeAutoRefresh() {
       (it.dueCalls || []).forEach(dc => {
         const dateObj = new Date(dc.callDate + 'T00:00:00');
 
-        // Window: SF datetime (if present) else week-window
         const windowEnd = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(dateObj);
         const now = new Date();
         const active = now.getTime() <= windowEnd.getTime();
@@ -193,7 +182,6 @@ function resumeAutoRefresh() {
         calls.appendChild(btn);
       });
 
-      // Show countdown ONLY if any SF (future datetime with time) exists
       const sfFuture = (it.sfFuture || null);
       if (sfFuture) {
         const chip = document.createElement('div');
@@ -204,11 +192,7 @@ function resumeAutoRefresh() {
         const tick = () => {
           const now = new Date();
           const diff = target - now;
-          if (diff <= 0) {
-            chip.textContent = 'Overdue';
-            chip.classList.add('overdue');
-            return;
-          }
+          if (diff <= 0) { chip.textContent = 'Overdue'; chip.classList.add('overdue'); return; }
           chip.textContent = formatDHMS(diff);
         };
         tick();
@@ -243,39 +227,92 @@ function resumeAutoRefresh() {
     pauseAutoRefresh();
     modalContext = {
       rowIndex: item.rowIndex,
-      dateISO: todayISO,        // aaj ke mark ke liye
+      dateISO: todayISO,
       callN: dueCall.callN,
       clientName: item.clientName,
-      callDate: dueCall.callDate // planned date (ISO)
+      callDate: dueCall.callDate
     };
     qs('#modalTitle').textContent = `Follow-up for ${item.clientName}`;
     remarkInput.value = '';
-    outcomeSel.value = 'OR';
+
+    // NEW: default placeholder, not OR
+    outcomeSel.value = '';
+
     markInfo.textContent = `Call-${dueCall.callN} | Scheduled: ${dueCall.callDate}`;
 
-    orBlock.classList.add('hidden'); orFile.value = '';
+    // reset blocks
+    orBlock.classList.add('hidden'); if (orFile) orFile.value = '';
     sfBlock.classList.add('hidden'); sfWhen.value = '';
+    if (orFrameWrap) orFrameWrap.classList.add('hidden');
+    if (orFrame) orFrame.src = '';
+
+    childDone = false;
     modal.classList.remove('hidden');
   }
 
+  // When outcome changes
   outcomeSel.addEventListener('change', () => {
     const v = outcomeSel.value;
-    orBlock.classList.toggle('hidden', v !== 'OR');
-    sfBlock.classList.toggle('hidden', v !== 'SF');
+
+    // hide everything first
+    orBlock.classList.add('hidden');
+    sfBlock.classList.add('hidden');
+    if (orFrameWrap) orFrameWrap.classList.add('hidden');
+    if (orFrame) orFrame.src = '';
+    if (msgHandlerBound) { window.removeEventListener('message', onChildMessage, false); msgHandlerBound = false; }
+    childDone = false;
+
+    if (v === 'SF') {
+      sfBlock.classList.remove('hidden');
+      // Submit visible
+      btnSubmit.disabled = false;
+      btnSubmit.classList.remove('disabled');
+
+    } else if (v === 'OR') {
+      // Show iframe instead of file-upload
+      const ctx = modalContext || {};
+      const params = new URLSearchParams({
+        clientName: ctx.clientName || '',
+        callN: String(ctx.callN || ''),
+        plannedDate: ctx.callDate || '',
+        rowIndex: String(ctx.rowIndex || '')
+      });
+      const punchURL = `https://ntwoods.github.io/ordertodispatch/orderPunch.html?${params.toString()}`;
+      if (orFrame) orFrame.src = punchURL;
+      if (orFrameWrap) orFrameWrap.classList.remove('hidden');
+
+      // Bind postMessage listener
+      if (!msgHandlerBound) { window.addEventListener('message', onChildMessage, false); msgHandlerBound = true; }
+
+      // For OR we will auto-close after success; disable manual submit to avoid premature mark
+      btnSubmit.disabled = true;
+      btnSubmit.classList.add('disabled');
+
+    } else if (v === 'NR') {
+      // nothing to show; normal submit allowed
+      btnSubmit.disabled = false;
+      btnSubmit.classList.remove('disabled');
+    }
   });
 
-  qs('#btnCancel').addEventListener('click', () => {
-    modal.classList.add('hidden'); modalContext = null;
-    resumeAutoRefresh();    
+  // Cancel
+  btnCancel.addEventListener('click', () => {
+    closeResponseModalSafely();
   });
 
+  // Manual submit for SF/NR (OR is auto-handled)
   btnSubmit.addEventListener('click', async () => {
     if (!modalContext) return;
-    resumeAutoRefresh();
+
     const outcome = outcomeSel.value;
+    if (!outcome) { showToast('Please select an outcome'); return; }
+
+    // If OR, we shouldn't reach here because button is disabled; safety check:
+    if (outcome === 'OR' && !childDone) { showToast('Please submit the Order Punch form first'); return; }
+
     const remark = (remarkInput.value || '').trim();
 
-    let payload = {
+    const payload = {
       rowIndex: modalContext.rowIndex,
       date: modalContext.dateISO,
       outcome,
@@ -284,23 +321,16 @@ function resumeAutoRefresh() {
       plannedDate: modalContext.callDate
     };
 
-    if (outcome === 'OR') {
-      if (!orFile.files || !orFile.files[0]) return showToast('Please choose an order file.');
-      const f = orFile.files[0];
-      const base64 = await fileToBase64(f);
-      payload.orFile = { name: f.name, type: f.type || 'application/octet-stream', base64 };
-    }
-
     if (outcome === 'SF') {
       if (!sfWhen.value) return showToast('Please select date & time for next follow-up.');
-      payload.scheduleAt = sfWhen.value; // 2025-10-26T17:30
+      payload.scheduleAt = sfWhen.value;
     }
 
     try {
       toggleLoader(true);
       await apiPOST('mark', payload);
       showToast(`Saved: ${outcome}`);
-      modal.classList.add('hidden'); modalContext = null;
+      closeResponseModalSafely();
       await loadDue();
     } catch (err) {
       showToast(err.message || String(err));
@@ -308,6 +338,54 @@ function resumeAutoRefresh() {
       toggleLoader(false);
     }
   });
+
+  // ---------- postMessage handler (iframe -> parent) ----------
+  function onChildMessage(event){
+    // Strict origin check (child is hosted on ntwoods.github.io)
+    if (event.origin !== 'https://ntwoods.github.io') return;
+    const msg = event.data || {};
+    if (msg && msg.type === 'ORDER_PUNCHED') {
+      childDone = true;
+      showToast('Order form submitted. Saving…');
+
+      // Auto-mark as OR, then close & refresh
+      const payload = {
+        rowIndex: modalContext.rowIndex,
+        date: modalContext.dateISO,
+        outcome: 'OR',
+        remark: (remarkInput.value || '').trim(),
+        callN: modalContext.callN,
+        plannedDate: modalContext.callDate
+      };
+
+      (async () => {
+        try {
+          toggleLoader(true);
+          await apiPOST('mark', payload);      // fire-and-forget
+          closeResponseModalSafely();
+          await loadDue();
+        } catch (e) {
+          showToast('Saved locally but mark failed—retry from list.');
+        } finally {
+          toggleLoader(false);
+        }
+      })();
+    }
+  }
+
+  function closeResponseModalSafely(){
+    // cleanup listeners & iframe
+    if (msgHandlerBound) { window.removeEventListener('message', onChildMessage, false); msgHandlerBound = false; }
+    if (orFrame) orFrame.src = '';
+    if (orFrameWrap) orFrameWrap.classList.add('hidden');
+
+    // reset UI
+    btnSubmit.disabled = false;
+    btnSubmit.classList.remove('disabled');
+
+    modal.classList.add('hidden'); modalContext = null;
+    resumeAutoRefresh();
+  }
 
   // ---------- Sign out ----------
   signOutBtn.addEventListener('click', () => {
