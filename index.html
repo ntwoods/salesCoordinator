@@ -70,10 +70,21 @@
             <option value="NR">NR (No Requirement)</option>
           </select>
 
-          <div id="orBlock" class="hidden">
-            <label>Upload Order File</label>
-            <input id="orFile" type="file" />
+        <!-- OR iframe container (hidden by default) -->
+        <div id="orFrameWrap" class="hidden">
+          <div class="muted" style="margin-bottom:8px;">
+            Please fill Order Punch form below. On successful submit, this modal will auto-proceed.
           </div>
+          <div class="iframe-host">
+            <iframe id="orFrame"
+                    title="Order Punch"
+                    src=""
+                    allow="clipboard-write; clipboard-read"
+                    referrerpolicy="no-referrer"
+                    loading="lazy"></iframe>
+          </div>
+        </div>
+
 
           <div id="sfBlock" class="hidden">
             <label>Next Follow-up (Date & Time)</label>
