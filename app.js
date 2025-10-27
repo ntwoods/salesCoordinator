@@ -15,6 +15,20 @@
   const toastEl = qs('#toast');
   const appLoader = qs('#appLoader');
 
+    // Response modal elements
+  const outcomeSel  = qs('#outcome');          // aapke dropdown ka id
+  const sfBlock     = qs('#sfBlock');          // SF ka container (already hoga)
+  const orFrameWrap = qs('#orFrameWrap');      // naya OR iframe container
+  const orFrame     = qs('#orFrame');          // iframe itself
+  const modalEl     = qs('#responseModal');    // aapka modal root (id apne hisaab se)
+  const submitBtn   = qs('#btnSubmit');        // modal submit button (id match kar lein)
+  const cancelBtn   = qs('#btnCancel');        // modal cancel/close btn
+  
+  // runtime flags
+  let childDone = false;   // iframe se success signal aaya?
+  let msgHandlerBound = false;
+
+
   const modal = qs('#modal');
   const outcomeSel = qs('#outcome');
   const remarkInput = qs('#remark');
