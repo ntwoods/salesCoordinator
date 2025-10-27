@@ -15,35 +15,27 @@
   const toastEl = qs('#toast');
   const appLoader = qs('#appLoader');
 
-    // Response modal elements
-  const outcomeSel  = qs('#outcome');          // aapke dropdown ka id
-  const sfBlock     = qs('#sfBlock');          // SF ka container (already hoga)
-  const orFrameWrap = qs('#orFrameWrap');      // naya OR iframe container
-  const orFrame     = qs('#orFrame');          // iframe itself
-  const modalEl     = qs('#responseModal');    // aapka modal root (id apne hisaab se)
-  const submitBtn   = qs('#btnSubmit');        // modal submit button (id match kar lein)
-  const cancelBtn   = qs('#btnCancel');        // modal cancel/close btn
-  
-  // runtime flags
-  let childDone = false;   // iframe se success signal aaya?
-  let msgHandlerBound = false;
-
-
   const modal = qs('#modal');
   const outcomeSel = qs('#outcome');
   const remarkInput = qs('#remark');
   const markInfo = qs('#markInfo');
   const btnCancel = qs('#btnCancel');
   const btnSubmit = qs('#btnSubmit');
-  const orBlock = qs('#orBlock');
-  const orFile = qs('#orFile');
+  const orBlock = qs('#orBlock');     // legacy file-upload block (now hidden for OR)
+  const orFile = qs('#orFile');       // legacy file input (unused now)
   const sfBlock = qs('#sfBlock');
   const sfWhen = qs('#sfWhen');
+  const orFrameWrap = qs('#orFrameWrap'); // NEW: iframe container
+  const orFrame = qs('#orFrame');         // NEW: iframe
 
   let modalContext = null;
   let idToken = null;
   let userInfo = null;
   let countdownTimers = [];
+
+  // Handshake state for iframe + postMessage
+  let childDone = false;
+  let msgHandlerBound = false;
 
   // ---------- Google Sign-in ----------
   window.onload = () => {
@@ -54,17 +46,23 @@
       ux_mode: 'popup',
     });
     google.accounts.id.renderButton(
-      document.getElementById('g_id_signin'),
-      { theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill' }
+      qs('#googleBtn'),
+      { theme: 'outline', size: 'large', width: 280 }
     );
   };
 
-  async function handleCredentialResponse(resp) {
+  async function handleCredentialResponse(resp){
     try {
-      idToken = resp.credential;
       toggleLoader(true);
-      const who = await apiGET('me');
-      userInfo = who.user;
+      const credential = resp.credential;
+      const parts = credential.split('.');
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      idToken = credential;
+      userInfo = {
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture
+      };
       userEmailEl.textContent = userInfo.email;
       userPicEl.src = userInfo.picture || '';
       loginView.classList.add('hidden');
@@ -95,36 +93,36 @@
   }
 
   let autoRefreshTimer = null;
-let autoRefreshPaused = false;
+  let autoRefreshPaused = false;
 
-// Start auto refresh (runs every 30s)
-function startAutoRefresh() {
-  stopAutoRefresh(); // clear previous interval
-  if (autoRefreshPaused) return; // do not start when modal open
-  autoRefreshTimer = setInterval(() => {
-    if (!autoRefreshPaused) {
-      loadDue('silent'); // 'silent' to prevent loader flicker
-    }
-  }, 30000);
-}
+  // Start auto refresh (runs every 30s)
+  function startAutoRefresh() {
+    stopAutoRefresh(); // clear previous interval
+    if (autoRefreshPaused) return; // do not start when modal open
+    autoRefreshTimer = setInterval(() => {
+      if (!autoRefreshPaused) {
+        loadDue('silent'); // 'silent' to prevent loader flicker
+      }
+    }, 30000);
+  }
 
-// Stop auto refresh manually
-function stopAutoRefresh() {
-  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-  autoRefreshTimer = null;
-}
+  // Stop auto refresh manually
+  function stopAutoRefresh() {
+    if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+  }
 
-// Pause when modal opens
-function pauseAutoRefresh() {
-  autoRefreshPaused = true;
-  stopAutoRefresh();
-}
+  // Pause when modal opens
+  function pauseAutoRefresh() {
+    autoRefreshPaused = true;
+    stopAutoRefresh();
+  }
 
-// Resume when modal closes
-function resumeAutoRefresh() {
-  autoRefreshPaused = false;
-  startAutoRefresh();
-}
+  // Resume when modal closes
+  function resumeAutoRefresh() {
+    autoRefreshPaused = false;
+    startAutoRefresh();
+  }
 
   // ---------- Week/SF window helpers ----------
   function monthLastDate(d){
@@ -142,108 +140,90 @@ function resumeAutoRefresh() {
   }
 
   // ---------- Load Due ----------
-  async function loadDue() {
+  async function loadDue(mode) {
     countdownTimers.forEach(clearInterval);
     countdownTimers = [];
     cardsEl.innerHTML = '';
     emptyState.classList.add('hidden');
+    todayTag.textContent = new Date().toLocaleDateString();
 
-    toggleLoader(true);
-    const data = await apiGET('due');
-    toggleLoader(false);
-
-    const todayISO = data.today;
-    const today = new Date(todayISO);
-    todayTag.textContent = today.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
-
-    const items = data.items || [];
-
-    // Overdue count (based on <= today but before their active windows)
-    qs('#countOverdue').textContent = items.reduce((acc,it)=>{
-      const anyOver = (it.dueCalls||[]).some(dc=>{
-        const base = new Date(dc.callDate+'T00:00:00');
-        const end = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
-        return (new Date() > end);
-      });
-      return acc + (anyOver?1:0);
-    },0);
-
-    let shown = 0;
-    for (const it of items) {
-      const card = document.createElement('div');
-      card.className = 'card-sm';
-
-      const client = document.createElement('div');
-      client.className = 'client';
-      client.textContent = it.clientName;
-
-      const calls = document.createElement('div');
-      calls.className = 'calls';
-
-      let activeCount = 0;
-
-      (it.dueCalls || []).forEach(dc => {
-        const dateObj = new Date(dc.callDate + 'T00:00:00');
-
-        // Window: SF datetime (if present) else week-window
-        const windowEnd = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(dateObj);
-        const now = new Date();
-        const active = now.getTime() <= windowEnd.getTime();
-
-        const btn = document.createElement('button');
-        btn.className = 'btn light';
-        btn.textContent = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-        btn.title = `Call-${dc.callN} (${dc.callDate})` + (dc.sfAt ? ` | until ${new Date(dc.sfAt).toLocaleString('en-IN')}` : '');
-
-        if (!active) {
-          btn.disabled = true;
-          btn.classList.add('disabled');
-          btn.title += ' (expired)';
-        } else {
-          activeCount++;
-          btn.addEventListener('click', () => openModal(it, dc, todayISO));
-        }
-
-        calls.appendChild(btn);
-      });
-
-      // Show countdown ONLY if any SF (future datetime with time) exists
-      const sfFuture = (it.sfFuture || null);
-      if (sfFuture) {
-        const chip = document.createElement('div');
-        chip.className = 'countdown';
-        card.appendChild(chip);
-
-        const target = new Date(sfFuture);
-        const tick = () => {
-          const now = new Date();
-          const diff = target - now;
-          if (diff <= 0) {
-            chip.textContent = 'Overdue';
-            chip.classList.add('overdue');
-            return;
-          }
-          chip.textContent = formatDHMS(diff);
-        };
-        tick();
-        const t = setInterval(tick, 1000);
-        countdownTimers.push(t);
+    if (mode !== 'silent') toggleLoader(true);
+    try {
+      const { data } = await apiGET('due');
+      if (!data || !data.length) {
+        emptyState.classList.remove('hidden');
+        return;
       }
-
-      if (activeCount > 0) {
-        card.appendChild(client);
-        card.appendChild(calls);
-        cardsEl.appendChild(card);
-        shown++;
-      }
+      renderCards(data);
+    } catch (err) {
+      showToast(err.message || String(err));
+    } finally {
+      if (mode !== 'silent') toggleLoader(false);
+      startAutoRefresh();
     }
-
-    qs('#countDue').textContent = shown;
-    if (!shown) emptyState.classList.remove('hidden');
-    startAutoRefresh();
   }
 
-  function formatDHMS(ms){
+  // ---------- Render ----------
+  function renderCards(items){
+    const fr = document.createDocumentFragment();
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const hdr = document.createElement('div');
+      hdr.className = 'card-hdr';
+      hdr.innerHTML = `
+        <div class="title">${item.clientName}</div>
+        <div class="meta">${item.city || ''}</div>
+      `;
+
+      const body = document.createElement('div');
+      body.className = 'card-body';
+
+      const dueDatesWrap = document.createElement('div');
+      dueDatesWrap.className = 'dates-wrap';
+
+      (item.dueCalls || []).forEach(dc => {
+        const btn = document.createElement('button');
+        btn.className = 'btn date-btn';
+        btn.textContent = new Date(dc.callDate).toLocaleDateString() + ` · Call-${dc.callN}`;
+        btn.addEventListener('click', () => openModal(item, dc, new Date().toISOString().slice(0,10)));
+        dueDatesWrap.appendChild(btn);
+      });
+
+      body.appendChild(dueDatesWrap);
+
+      const ftr = document.createElement('div');
+      ftr.className = 'card-ftr';
+      ftr.innerHTML = `
+        <span class="tag ${item.priority || ''}">${item.priority || ''}</span>
+        <span class="countdown" data-deadline="${item.deadline || ''}"></span>
+      `;
+
+      card.appendChild(hdr);
+      card.appendChild(body);
+      card.appendChild(ftr);
+      fr.appendChild(card);
+    });
+    cardsEl.appendChild(fr);
+    initCountdowns();
+  }
+
+  function initCountdowns(){
+    (cardsEl.querySelectorAll('.countdown') || []).forEach(el => {
+      const deadlineISO = el.getAttribute('data-deadline');
+      if (!deadlineISO) return;
+      const dd = new Date(deadlineISO);
+      const id = setInterval(() => {
+        const now = new Date();
+        const ms = dd - now;
+        if (ms <= 0) { el.textContent = 'Expired'; clearInterval(id); return; }
+        el.textContent = pretty(ms);
+      }, 1000);
+      countdownTimers.push(id);
+    });
+  }
+  function pretty(ms){
     const s = Math.floor(ms/1000);
     const d = Math.floor(s/86400);
     const h = Math.floor((s%86400)/3600);
@@ -264,32 +244,56 @@ function resumeAutoRefresh() {
     };
     qs('#modalTitle').textContent = `Follow-up for ${item.clientName}`;
     remarkInput.value = '';
-    if (outcomeSel) {
-      outcomeSel.value = "";    // placeholder default
-    }
-    childDone = false;          // naya session
-    if (orFrame) orFrame.src = ""; 
-    if (orFrameWrap) orFrameWrap.classList.add('hidden');
+    outcomeSel.value = '' /* placeholder */;
     markInfo.textContent = `Call-${dueCall.callN} | Scheduled: ${dueCall.callDate}`;
-    orBlock.classList.add('hidden'); orFile.value = '';
-    sfBlock.classList.add('hidden'); sfWhen.value = '';
+
+    if (orBlock) orBlock.classList.add('hidden'); if (orFile) orFile.value = '';
+    if (sfBlock) { sfBlock.classList.add('hidden'); sfWhen.value = ''; }
+    if (orFrameWrap) orFrameWrap.classList.add('hidden'); if (orFrame) orFrame.src='';
+    childDone = false;
     modal.classList.remove('hidden');
   }
 
   outcomeSel.addEventListener('change', () => {
     const v = outcomeSel.value;
-    orBlock.classList.toggle('hidden', v !== 'OR');
+
+    if (orBlock) orBlock.classList.add('hidden'); // legacy upload hidden
     sfBlock.classList.toggle('hidden', v !== 'SF');
+
+    if (v === 'OR') {
+      // Build iframe URL with lightweight context
+      const ctx = window.modalContext || {};
+      const params = new URLSearchParams({
+        clientName: ctx.clientName || '',
+        callN: String(ctx.callN || ''),
+        plannedDate: ctx.callDate || '',
+        rowIndex: String(ctx.rowIndex || '')
+      });
+      const punchURL = `https://ntwoods.github.io/ordertodispatch/orderPunch.html?${params.toString()}`;
+      if (orFrame) orFrame.src = punchURL;
+      if (orFrameWrap) orFrameWrap.classList.remove('hidden');
+      childDone = false;
+      if (!msgHandlerBound) { window.addEventListener('message', onChildMessage, false); msgHandlerBound = true; }
+    } else {
+      if (orFrameWrap) orFrameWrap.classList.add('hidden');
+      if (orFrame) orFrame.src = '';
+      if (msgHandlerBound) { window.removeEventListener('message', onChildMessage, false); msgHandlerBound = false; }
+      childDone = false;
+    }
   });
 
   qs('#btnCancel').addEventListener('click', () => {
     modal.classList.add('hidden'); modalContext = null;
-    resumeAutoRefresh();    
+    if (orFrame) orFrame.src=''; if (orFrameWrap) orFrameWrap.classList.add('hidden');
+    if (msgHandlerBound) { window.removeEventListener('message', onChildMessage, false); msgHandlerBound = false; }
+    childDone = false;
+    resumeAutoRefresh();
   });
 
   btnSubmit.addEventListener('click', async () => {
     if (!modalContext) return;
     resumeAutoRefresh();
+
     const outcome = outcomeSel.value;
     const remark = (remarkInput.value || '').trim();
 
@@ -302,12 +306,9 @@ function resumeAutoRefresh() {
       plannedDate: modalContext.callDate
     };
 
-    if (outcome === 'OR') {
-      if (!orFile.files || !orFile.files[0]) return showToast('Please choose an order file.');
-      const f = orFile.files[0];
-      const base64 = await fileToBase64(f);
-      payload.orFile = { name: f.name, type: f.type || 'application/octet-stream', base64 };
-    }
+    if (outcome === '') { showToast('Please select an outcome'); return; }
+    if (outcome === 'OR' && !childDone) { showToast('Please submit the Order Punch form first'); return; }
+    // OR: no file upload from parent; child handles uploads
 
     if (outcome === 'SF') {
       if (!sfWhen.value) return showToast('Please select date & time for next follow-up.');
@@ -335,6 +336,16 @@ function resumeAutoRefresh() {
     mainView.classList.add('hidden');
     loginView.classList.remove('hidden');
   });
+
+  // ---------- postMessage handler (iframe -> parent) ----------
+  function onChildMessage(event){
+    if (event.origin !== 'https://ntwoods.github.io') return;
+    const msg = event.data || {};
+    if (msg && msg.type === 'ORDER_PUNCHED') {
+      childDone = true;
+      showToast('Order form submitted. You can proceed.');
+    }
+  }
 
   // ---------- Utils ----------
   function showError(sel, msg){ const el = qs(sel); el.textContent = msg; el.classList.remove('hidden'); }
