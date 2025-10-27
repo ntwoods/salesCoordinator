@@ -264,9 +264,13 @@ function resumeAutoRefresh() {
     };
     qs('#modalTitle').textContent = `Follow-up for ${item.clientName}`;
     remarkInput.value = '';
-    outcomeSel.value = 'OR';
+    if (outcomeSel) {
+      outcomeSel.value = "";    // placeholder default
+    }
+    childDone = false;          // naya session
+    if (orFrame) orFrame.src = ""; 
+    if (orFrameWrap) orFrameWrap.classList.add('hidden');
     markInfo.textContent = `Call-${dueCall.callN} | Scheduled: ${dueCall.callDate}`;
-
     orBlock.classList.add('hidden'); orFile.value = '';
     sfBlock.classList.add('hidden'); sfWhen.value = '';
     modal.classList.remove('hidden');
