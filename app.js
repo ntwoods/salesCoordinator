@@ -288,12 +288,11 @@
           orFrameWrap.querySelector('.iframe-host')?.classList.remove('compact');
         }
       }
-      
+
       // Bind postMessage listener
       if (!msgHandlerBound) { window.addEventListener('message', onChildMessage, false); msgHandlerBound = true; }
 
-
-      // For OR we will auto-close after success; disable manual submit to avoid premature mark
+      // OR: disable submit until child confirms success
       btnSubmit.disabled = true;
       btnSubmit.classList.add('disabled');
 
@@ -309,15 +308,17 @@
     closeResponseModalSafely();
   });
 
-  // Manual submit for SF/NR (OR is auto-handled)
+  // Manual submit (SF/NR normally; OR allowed only after childDone === true)
   btnSubmit.addEventListener('click', async () => {
     if (!modalContext) return;
 
     const outcome = outcomeSel.value;
     if (!outcome) { showToast('Please select an outcome'); return; }
 
-    // If OR, we shouldn't reach here because button is disabled; safety check:
-    if (outcome === 'OR' && !childDone) { showToast('Please submit the Order Punch form first'); return; }
+    if (outcome === 'OR' && !childDone) { // guard
+      showToast('Please submit the Order Punch form first');
+      return;
+    }
 
     const remark = (remarkInput.value || '').trim();
 
@@ -353,32 +354,13 @@
     // Strict origin check (child is hosted on ntwoods.github.io)
     if (event.origin !== 'https://ntwoods.github.io') return;
     const msg = event.data || {};
+
+    // NEW: Only enable submit; DO NOT auto-mark or close.
     if (msg && msg.type === 'ORDER_PUNCHED') {
       childDone = true;
-      showToast('Order form submitted. Saving…');
-
-      // Auto-mark as OR, then close & refresh
-      const payload = {
-        rowIndex: modalContext.rowIndex,
-        date: modalContext.dateISO,
-        outcome: 'OR',
-        remark: (remarkInput.value || '').trim(),
-        callN: modalContext.callN,
-        plannedDate: modalContext.callDate
-      };
-
-      (async () => {
-        try {
-          toggleLoader(true);
-          await apiPOST('mark', payload);      // fire-and-forget
-          closeResponseModalSafely();
-          await loadDue();
-        } catch (e) {
-          showToast('Saved locally but mark failed—retry from list.');
-        } finally {
-          toggleLoader(false);
-        }
-      })();
+      btnSubmit.disabled = false;
+      btnSubmit.classList.remove('disabled');
+      showToast('Order form submitted. Now click Submit to record OR.');
     }
   }
 
