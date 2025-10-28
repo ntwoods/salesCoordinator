@@ -328,8 +328,8 @@
       }
 
       // Disable submit until child confirms success
-      btnSubmit.disabled = true;
-      btnSubmit.classList.add('disabled');
+      btnSubmit.disabled = false;
+      btnSubmit.classList.add('enabled');
 
     } else if (v === 'NR') {
       btnSubmit.disabled = false;
@@ -347,11 +347,6 @@
 
     const outcome = outcomeSel.value;
     if (!outcome) { showToast('Please select an outcome'); return; }
-
-    if (outcome === 'OR' && !childDone) {
-      showToast('Please submit the Order Punch form first');
-      return;
-    }
 
     const remark = (remarkInput.value || '').trim();
 
