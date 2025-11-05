@@ -53,6 +53,23 @@
       <main class="content">
         <div id="cards" class="grid"></div>
         <div id="emptyState" class="hidden empty">No active follow-ups. 🎉</div>
+      <!-- (Optional) Badge Legend – UI me reference ke liye -->
++        <div class="muted small" style="margin-top:14px;">
++          <span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;">
++            <span style="display:inline-flex;align-items:center;gap:6px;">
++              <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span> Red
++            </span>
++            <span style="display:inline-flex;align-items:center;gap:6px;">
++              <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span> Yellow
++            </span>
++            <span style="display:inline-flex;align-items:center;gap:6px;">
++              <span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;"></span> Green
++            </span>
++          </span>
++        </div>
++
++        <!-- (Optional) Template if you prefer element-based badge injection -->
++        <template id="clientBadgeTemplate"><span class="client-badge">Color</span></template>
       </main>
     </section>
 
