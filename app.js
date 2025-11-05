@@ -244,8 +244,8 @@
 
     qs('#countDue').textContent = shown;
     if (!shown) emptyState.classList.remove('hidden');    
-    attachBadge(card, item.clientColor);    
     startAutoRefresh();
+    attachBadge(card, item.clientColor);        
   }
 
   // ---------- Modal Open ----------
