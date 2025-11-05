@@ -243,7 +243,8 @@
     }
 
     qs('#countDue').textContent = shown;
-    if (!shown) emptyState.classList.remove('hidden');
+    if (!shown) emptyState.classList.remove('hidden');    
+    attachBadge(card, item.clientColor);    
     startAutoRefresh();
   }
 
