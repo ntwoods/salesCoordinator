@@ -432,6 +432,28 @@
     appLoader.classList.toggle('hidden', !on);
   }
 
+  function normColor(val) {
+  if (!val) return "";
+  const v = String(val).trim().toLowerCase();
+  if (v.startsWith("r")) return "Red";
+  if (v.startsWith("y")) return "Yellow";
+  if (v.startsWith("g")) return "Green";
+  return "";
+}
+
+
+  function attachBadge(cardEl, rawColor) {
+  const color = normColor(rawColor);
+  if (!color) return;
+
+  const tpl = document.getElementById("clientBadgeTemplate");
+  const badge = tpl.content.firstElementChild.cloneNode(true);
+  badge.textContent = color; // "Red"/"Yellow"/"Green"
+  badge.classList.add("is-" + color.toLowerCase()); // is-red|is-yellow|is-green
+  cardEl.appendChild(badge);
+}
+
+
   // (Kept in case legacy file upload is ever revived)
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
