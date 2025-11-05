@@ -96,6 +96,7 @@ html, body {
   flex-direction:column;
   gap:12px;
   transition:transform .1s ease;
+  position: relative; /* badge anchor */
 }
 .card-sm:hover{ transform:translateY(-3px); }
 .client{ font-weight:700; }
@@ -214,95 +215,54 @@ html, body {
   .content{padding:16px;}
 }
 
+/* ===== Client Color Badge / Tag ===== */
+/* Element-based badge (optional): <span class="client-badge is-red">Red</span> */
+.client-badge{
+  position:absolute;
+  top:10px; right:10px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.2px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid transparent;
+  background:#eef2ff;
+  color:#1f2937;
+  user-select:none;
+}
+.client-badge::before{
+  content:"";
+  width:8px; height:8px; border-radius:50%;
+  background:#9ca3af;
+  display:inline-block;
+}
+.client-badge.is-red{    background:#fff1f2; color:#9f1239; border-color:#fecdd3; }
+.client-badge.is-red::before{    background:#ef4444; }
+.client-badge.is-yellow{ background:#fffbeb; color:#92400e; border-color:#fde68a; }
+.client-badge.is-yellow::before{ background:#f59e0b; }
+.client-badge.is-green{  background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
+.client-badge.is-green::before{  background:#10b981; }
 
---- a/styles.css
-+++ b/styles.css
-@@ -73,6 +73,7 @@
- /* ---- Card ---- */
- .card-sm {
-   background:#fff;
-   border-radius:22px;
-   box-shadow:var(--shadow);
-   padding:16px;
-   display:flex;
-   flex-direction:column;
-   gap:12px;
-   transition:transform .1s ease;
-+  position: relative; /* badge ko anchor karne ke liye */
- }
- .card-sm:hover{ transform:translateY(-3px); }
- .client{ font-weight:700; }
- .calls{ display:flex; flex-wrap:wrap; gap:8px; }
- .btn{
-@@ -195,3 +196,73 @@
-   .content{padding:16px;}
- }
-+
-+/* ==== Client Color Badge / Tag ==== */
-+/* Base pill style (Element-based usage): <span class="client-badge is-red">Red</span> */
-+.client-badge{
-+  position:absolute;
-+  top:10px; right:10px;
-+  display:inline-flex;
-+  align-items:center;
-+  gap:6px;
-+  font-size:12px;
-+  font-weight:700;
-+  letter-spacing:.2px;
-+  padding:6px 10px;
-+  border-radius:999px;
-+  border:1px solid transparent;
-+  background:#eef2ff;
-+  color:#1f2937;
-+  user-select:none;
-+}
-+.client-badge::before{
-+  content:"";
-+  width:8px; height:8px; border-radius:50%;
-+  background:#9ca3af;
-+  display:inline-block;
-+}
-+
-+/* Color variants */
-+.client-badge.is-red{
-+  background:#fff1f2;
-+  color:#9f1239;
-+  border-color:#fecdd3;
-+}
-+.client-badge.is-red::before{ background:#ef4444; }
-+
-+.client-badge.is-yellow{
-+  background:#fffbeb;
-+  color:#92400e;
-+  border-color:#fde68a;
-+}
-+.client-badge.is-yellow::before{ background:#f59e0b; }
-+
-+.client-badge.is-green{
-+  background:#ecfdf5;
-+  color:#065f46;
-+  border-color:#a7f3d0;
-+}
-+.client-badge.is-green::before{ background:#10b981; }
-+
-+/* ==== Pure CSS (attribute-based) – no extra span required ====
-+   Usage: <div class="card-sm" data-client-color="Red"> ... </div>
-+   Ye block .card-sm::after se badge draw karta hai aur text ko attr() se pick karta hai. */
-+.card-sm[data-client-color]::after{
-+  content: attr(data-client-color);
-+  position:absolute;
-+  top:10px; right:10px;
-+  display:inline-flex;
-+  align-items:center;
-+  justify-content:center;
-+  min-width:64px;
-+  height:26px;
-+  padding:0 10px;
-+  border-radius:999px;
-+  font-size:12px; font-weight:700; letter-spacing:.2px;
-+  border:1px solid transparent;
-+  background:#eef2ff; color:#1f2937;
-+}
-+.card-sm[data-client-color="Red"]::after    { background:#fff1f2; color:#9f1239; border-color:#fecdd3; }
-+.card-sm[data-client-color="Yellow"]::after { background:#fffbeb; color:#92400e; border-color:#fde68a; }
-+.card-sm[data-client-color="Green"]::after  { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
+/* Attribute-based badge (recommended)
+   <div class="card-sm" data-client-color="Red|Yellow|Green">…</div> */
+.card-sm[data-client-color]::after{
+  content: attr(data-client-color);
+  position:absolute;
+  top:10px; right:10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:64px;
+  height:26px;
+  padding:0 10px;
+  border-radius:999px;
+  font-size:12px; font-weight:700; letter-spacing:.2px;
+  border:1px solid transparent;
+  background:#eef2ff; color:#1f2937;
+}
+.card-sm[data-client-color="Red"]::after    { background:#fff1f2; color:#9f1239; border-color:#fecdd3; }
+.card-sm[data-client-color="Yellow"]::after { background:#fffbeb; color:#92400e; border-color:#fde68a; }
+.card-sm[data-client-color="Green"]::after  { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
