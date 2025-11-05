@@ -128,7 +128,7 @@
     return dt;
   }
 
-  // IMPORTANT: Week windows => 1–7, 8–14, 15–21, 22–monthEnd
+  // Week windows => 1–7, 8–14, 15–21, 22–monthEnd
   function weekWindowEnd(dateObj) {
     const dd = dateObj.getDate();
     const endDay = dd <= 7 ? 7 : dd <= 14 ? 14 : dd <= 21 ? 21 : monthLastDate(dateObj).getDate();
@@ -146,6 +146,28 @@
     const m = Math.floor((s % 3600) / 60);
     const sec = s % 60;
     return `${d}d ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  }
+
+  // Normalize clientColor -> "Red" | "Yellow" | "Green" | ""
+  function normColor(val) {
+    if (!val) return "";
+    const v = String(val).trim().toLowerCase();
+    if (v.startsWith("r")) return "Red";
+    if (v.startsWith("y")) return "Yellow";
+    if (v.startsWith("g")) return "Green";
+    return "";
+  }
+
+  // (Optional) element-based badge injector — kept for future use
+  function attachBadge(cardEl, rawColor) {
+    const color = normColor(rawColor);
+    if (!color) return;
+    const tpl = document.getElementById("clientBadgeTemplate");
+    if (!tpl) return;
+    const badge = tpl.content.firstElementChild.cloneNode(true);
+    badge.textContent = color;
+    badge.classList.add("is-" + color.toLowerCase());
+    cardEl.appendChild(badge);
   }
 
   // ---------- Load & Render Due ----------
@@ -167,7 +189,7 @@
 
     const items = data.items || [];
 
-    // Overdue count (based on weekWindowEnd & any sfAt)
+    // Overdue count
     qs('#countOverdue').textContent = items.reduce((acc, it) => {
       const anyOver = (it.dueCalls || []).some(dc => {
         const base = new Date(dc.callDate + 'T00:00:00');
@@ -182,6 +204,9 @@
     for (const it of items) {
       const card = document.createElement('div');
       card.className = 'card-sm';
+
+      // 👇 Badge (attribute-based) — this is the only new line that matters for color tag
+      card.dataset.clientColor = normColor(it.clientColor);
 
       const client = document.createElement('div');
       client.className = 'client';
@@ -243,9 +268,11 @@
     }
 
     qs('#countDue').textContent = shown;
-    if (!shown) emptyState.classList.remove('hidden');    
+    if (!shown) emptyState.classList.remove('hidden');
+
     startAutoRefresh();
-    attachBadge(card, item.clientColor);        
+    // NOTE: element-based path not used. If ever needed:
+    // attachBadge(card, it.clientColor);
   }
 
   // ---------- Modal Open ----------
@@ -314,7 +341,6 @@
       if (orFrame) orFrame.src = punchURL;
       if (orFrameWrap) {
         orFrameWrap.classList.remove('hidden');
-        // (Optional) compact scaling for short viewports
         const host = orFrameWrap.querySelector('.iframe-host');
         if (host) {
           if (window.innerHeight < 760) host.classList.add('compact');
@@ -322,13 +348,11 @@
         }
       }
 
-      // Listen for child success
       if (!msgHandlerBound) {
         window.addEventListener('message', onChildMessage, false);
         msgHandlerBound = true;
       }
 
-      // Disable submit until child confirms success
       btnSubmit.disabled = false;
       btnSubmit.classList.add('enabled');
 
@@ -431,41 +455,5 @@
 
   function toggleLoader(on) {
     appLoader.classList.toggle('hidden', !on);
-  }
-
-  function normColor(val) {
-  if (!val) return "";
-  const v = String(val).trim().toLowerCase();
-  if (v.startsWith("r")) return "Red";
-  if (v.startsWith("y")) return "Yellow";
-  if (v.startsWith("g")) return "Green";
-  return "";
-}
-
-
-  function attachBadge(cardEl, rawColor) {
-  const color = normColor(rawColor);
-  if (!color) return;
-
-  const tpl = document.getElementById("clientBadgeTemplate");
-  const badge = tpl.content.firstElementChild.cloneNode(true);
-  badge.textContent = color; // "Red"/"Yellow"/"Green"
-  badge.classList.add("is-" + color.toLowerCase()); // is-red|is-yellow|is-green
-  cardEl.appendChild(badge);
-}
-
-
-  // (Kept in case legacy file upload is ever revived)
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const fr = new FileReader();
-      fr.onload = () => {
-        const s = String(fr.result);
-        const i = s.indexOf(',');
-        resolve(i >= 0 ? s.slice(i + 1) : s);
-      };
-      fr.onerror = () => reject(fr.error || new Error('File read error'));
-      fr.readAsDataURL(file);
-    });
   }
 })();
