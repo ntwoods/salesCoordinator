@@ -5,6 +5,7 @@
 
   // ---------- DOM refs ----------
   const loginView = qs('#loginView');
+  const btnQuickOrder = document.getElementById('btnQuickOrder');  
   const mainView = qs('#mainView');
   const cardsEl = qs('#cards');
   const emptyState = qs('#emptyState');
@@ -90,7 +91,14 @@
     if (!json.ok) throw new Error(json.error || 'GET failed');
     return json;
   }
-
+  async function apiGETRowByDealer(email, dealer) {
+    const url = `${CFG.GAS_BASE}?path=rowByDealer&email=${encodeURIComponent(email)}&dealer=${encodeURIComponent(dealer)}&id_token=${encodeURIComponent(idToken)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'rowByDealer failed');
+    return json; // { ok:true, rowIndex: number }
+  }
+  
   async function apiPOST(path, body) {
     // Per your requirement: fire-and-forget
     await fetch(CFG.GAS_BASE, {
@@ -101,6 +109,79 @@
     });
   }
 
+function openQuickOrder() {
+  if (!userInfo || !userInfo.email) {
+    showToast('Login email missing. Please sign in.'); 
+    return;
+  }
+  pauseAutoRefresh();
+
+  // Title & parent controls neutralize
+  document.getElementById('modalTitle').textContent = 'Order Punch';
+  outcomeSel.value = '';
+  orBlock?.classList.add('hidden');
+  sfBlock.classList.add('hidden');
+  if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.classList.add('disabled'); }
+  if (btnQuickOrder) {
+    btnQuickOrder.addEventListener('click', openQuickOrder);
+  }
+  
+
+  // Load quick-mode orderPunch
+  const params = new URLSearchParams({ variant: 'quick', email: userInfo.email });
+  const punchURL = `https://ntwoods.github.io/ordertodispatch/orderPunch.html?${params.toString()}`;
+  if (orFrame) orFrame.src = punchURL;
+  if (orFrameWrap) orFrameWrap.classList.remove('hidden');
+  modal.classList.remove('hidden');
+
+  // Message listener: child tells us ORDER_PUNCHED with dealer info
+  const onChildMsg = async (ev) => {
+    const msg = ev.data || {};
+    if (msg.type === 'ORDER_PUNCHED') {
+      // Expecting msg.dealerName and msg.isNew (true/false). 
+      // If your orderPunch doesn’t send them yet, it will still work,
+      // but row lookup may fail (so please keep the payload as discussed).
+      try {
+        const dealerName = (msg.dealerName || '').trim();
+        if (!dealerName) throw new Error('Dealer not received from child.');
+
+        // Find target row by (email, dealer)
+        const { rowIndex } = await apiGETRowByDealer(userInfo.email, dealerName);
+
+        // Auto-mark as OR (reusing your existing /mark path: will clear 15 days & set 16th)
+        const todayISO = new Date().toISOString().slice(0, 10);
+        const payload = {
+          rowIndex,
+          date: todayISO,
+          outcome: 'OR',
+          remark: 'Quick Order',
+          callN: 0,
+          plannedDate: todayISO
+        };
+        await apiPOST('mark', payload); // fire-and-forget as per your app.js pattern
+
+        showToast('Order saved. Follow-ups updated.');
+        closeResponseModalSafely();
+        await loadDue('silent');
+      } catch (e) {
+        console.error(e);
+        showToast(e.message || 'Could not auto-update.');
+      } finally {
+        window.removeEventListener('message', onChildMsg, false);
+        resumeAutoRefresh();
+      }
+    }
+    if (msg.type === 'CLOSE_PUNCH') {
+      closeResponseModalSafely();
+      window.removeEventListener('message', onChildMsg, false);
+      resumeAutoRefresh();
+    }
+  };
+  window.addEventListener('message', onChildMsg, false);
+}
+
+  
+  
   function startAutoRefresh() {
     stopAutoRefresh();
     if (autoRefreshPaused) return;
