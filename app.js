@@ -75,6 +75,7 @@
       userPicEl.src = userInfo.picture || '';
       loginView.classList.add('hidden');
       mainView.classList.remove('hidden');
+      if (btnQuickOrder) btnQuickOrder.addEventListener('click', openQuickOrder);      
       await loadDue();
     } catch (err) {
       showError('#loginError', err.message || String(err));
