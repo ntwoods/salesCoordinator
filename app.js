@@ -99,7 +99,15 @@
     if (!json.ok) throw new Error(json.error || 'rowByDealer failed');
     return json; // { ok:true, rowIndex: number }
   }
-  
+
+  async function apiGETScotDealers(email) {
+    const url = `${CFG.GAS_BASE}?path=scotDealers&email=${encodeURIComponent(email)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'scotDealers failed');
+    return json; // { ok:true, dealers: [...] }
+  }
+ 
   async function apiPOST(path, body) {
     // Per your requirement: fire-and-forget
     await fetch(CFG.GAS_BASE, {
