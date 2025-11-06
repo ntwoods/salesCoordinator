@@ -123,9 +123,6 @@ function openQuickOrder() {
   orBlock?.classList.add('hidden');
   sfBlock.classList.add('hidden');
   if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.classList.add('disabled'); }
-  if (btnQuickOrder) {
-    btnQuickOrder.addEventListener('click', openQuickOrder);
-  }
   
 
   // Load quick-mode orderPunch
