@@ -184,11 +184,17 @@ html, body {
 
 /* ---- Countdown ---- */
 .countdown {
-  position:absolute; right:12px; top:12px;
-  background:#fff7ed; color:#9a3412;
-  border:1px solid #fed7aa;
-  padding:4px 8px; border-radius:999px;
-  font-size:12px; font-weight:600;
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 2; /* ensure above card content if needed */
 }
 .countdown.overdue {
   background:#fee2e2; color:#991b1b; border-color:#fecaca;
@@ -219,7 +225,10 @@ html, body {
 /* Element-based badge (optional): <span class="client-badge is-red">Red</span> */
 .client-badge{
   position:absolute;
-  top:10px; right:10px;
+  right: 10px;
+  bottom: 10px;   /* ⬅️ was top:10px; */
+  top: auto;
+  z-index: 1;  
   display:inline-flex;
   align-items:center;
   gap:6px;
@@ -250,19 +259,25 @@ html, body {
    <div class="card-sm" data-client-color="Red|Yellow|Green">…</div> */
 .card-sm[data-client-color]::after{
   content: attr(data-client-color);
-  position:absolute;
-  top:10px; right:10px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-width:64px;
-  height:26px;
-  padding:0 10px;
-  border-radius:999px;
-  font-size:12px; font-weight:700; letter-spacing:.2px;
-  border:1px solid transparent;
-  background:#eef2ff; color:#1f2937;
+  position: absolute;
+  right: 10px;
+  bottom: 10px;     /* ⬅️ was top:10px; replace with bottom */
+  top: auto;        /* reset top */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  border: 1px solid transparent;
+  background: #eef2ff; 
+  color: #1f2937;
+  z-index: 1;       /* below countdown */
 }
-.card-sm[data-client-color="Red"]::after    { background:#fff1f2; color:#9f1239; border-color:#fecdd3; }
-.card-sm[data-client-color="Yellow"]::after { background:#fffbeb; color:#92400e; border-color:#fde68a; }
-.card-sm[data-client-color="Green"]::after  { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
+.card-sm[data-client-color="Red"]::after    { background:#fff1f2; color:#9f1239; border-color:#fecdd3; padding-bottom: 48px; }
+.card-sm[data-client-color="Yellow"]::after { background:#fffbeb; color:#92400e; border-color:#fde68a; padding-bottom: 48px; }
+.card-sm[data-client-color="Green"]::after  { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; padding-bottom: 48px; }
