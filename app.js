@@ -324,7 +324,8 @@ function openQuickOrder() {
 
       (it.dueCalls || []).forEach(dc => {
         const dateObj = new Date(dc.callDate + 'T00:00:00');
-        const windowEnd = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(dateObj);
+// Time ho ya na ho, dono cases me week-end tak active
+        const windowEnd = weekWindowEnd(dateObj);
         const now = new Date();
         const active = now.getTime() <= windowEnd.getTime();
 
