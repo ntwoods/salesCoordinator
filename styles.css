@@ -462,7 +462,8 @@ html, body {
 }
 
 /* ---- Color Badges (Attribute-based) ---- */
-.card-sm[data-client-color]::after {
+/* Only show badge if data-client-color is not empty */
+.card-sm[data-client-color]:not([data-client-color=""])::after {
   content: attr(data-client-color);
   position: absolute;
   top: 12px; 
@@ -502,8 +503,47 @@ html, body {
 }
 
 /* When countdown exists alongside badge */
-.card-sm[data-client-color] .countdown {
+.card-sm[data-client-color]:not([data-client-color=""]) .countdown {
   top: 48px; /* Move countdown below badge */
+}
+
+/* Alternative: Element-based badge (if needed as fallback) */
+.client-badge {
+  position: absolute;
+  top: 12px; 
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 11px; 
+  font-weight: 700; 
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-sm);
+  z-index: 1;
+}
+
+.client-badge.is-red { 
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b; 
+  border-color: #fca5a5;
+}
+
+.client-badge.is-yellow { 
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e; 
+  border-color: #fbbf24;
+}
+
+.client-badge.is-green { 
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46; 
+  border-color: #6ee7b7;
 }
 
 /* ---- Legend ---- */
