@@ -140,6 +140,24 @@ function openQuickOrder() {
   if (orFrameWrap) orFrameWrap.classList.remove('hidden');
   modal.classList.remove('hidden');
 
+  // 1) Iframe visible kar diya gaya hai — ab dealers preload karke child ko bhejo
+  (async () => {
+    try {
+      const { dealers = [] } = await apiGETScotDealers(userInfo.email);
+      // wait until iframe loads to ensure it can receive postMessage
+      orFrame.addEventListener('load', () => {
+        orFrame.contentWindow.postMessage(
+          { type: 'DEALERS_INIT', dealers, email: userInfo.email },
+          'https://ntwoods.github.io'
+        );
+      }, { once: true });
+    } catch (e) {
+      console.warn('Dealer preload failed:', e);
+      showToast('Dealer list fetch me issue aaya.');
+    }
+  })();
+
+  
   // Message listener: child tells us ORDER_PUNCHED with dealer info
   const onChildMsg = async (ev) => {
     const msg = ev.data || {};
