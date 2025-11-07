@@ -275,8 +275,7 @@ function openQuickOrder() {
     cardEl.appendChild(badge);
   }
 
-  // ---------- Load & Render Due ----------
-// ---------- Load & Render Due ----------
+// ---------- Load & Render Due (FULL REPLACEMENT) ----------
 async function loadDue(mode) {
   // cleanup old timers + reset UI
   countdownTimers.forEach(clearInterval);
@@ -296,14 +295,27 @@ async function loadDue(mode) {
 
   const items = data.items || [];
 
-  // Overdue count (summary chip)
+  // Helper: startOfDay
+  const startOfDay = (d) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+  const today0 = startOfDay(today);
+
+  // Overdue summary chip (top "Overdue" count)
   qs('#countOverdue').textContent = items.reduce((acc, it) => {
-    const over = (it.dueCalls || []).some(dc => {
-      const base = new Date(dc.callDate + 'T00:00:00');
-      const end  = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
-      return (new Date() > end);
+    const now = new Date();
+    const sfTarget = it.sfFuture ? new Date(it.sfFuture) : null;
+    const sfOver   = !!(sfTarget && sfTarget <= now);
+
+    const anyPastDate = (it.dueCalls || []).some(dc => {
+      const call = new Date(dc.callDate + 'T00:00:00');
+      return call < today0; // past-date
     });
-    return acc + (over ? 1 : 0);
+
+    const anySFPassed = (it.dueCalls || []).some(dc => {
+      return dc.sfAt && new Date(dc.sfAt) < now; // time crossed
+    });
+
+    const anyOver = anyPastDate || anySFPassed || sfOver;
+    return acc + (anyOver ? 1 : 0);
   }, 0);
 
   let shown = 0;
@@ -312,8 +324,6 @@ async function loadDue(mode) {
   for (const it of items) {
     const card = document.createElement('div');
     card.className = 'card-sm';
-
-    // badge color (data-attr; CSS handles it)
     card.dataset.clientColor = normColor(it.clientColor);
 
     const now = new Date();
@@ -327,11 +337,11 @@ async function loadDue(mode) {
     const calls = document.createElement('div');
     calls.className = 'calls';
 
-    // dueCalls buttons
+    // dueCalls buttons (enable/disable = weekWindowEnd based)
     let activeCount = 0;
     (it.dueCalls || []).forEach(dc => {
       const dateObj   = new Date(dc.callDate + 'T00:00:00');
-      const windowEnd = weekWindowEnd(dateObj);             // week window end
+      const windowEnd = weekWindowEnd(dateObj);                 // keep old window rule
       const isActive  = now.getTime() <= windowEnd.getTime();
 
       const btn = document.createElement('button');
@@ -351,19 +361,24 @@ async function loadDue(mode) {
       calls.appendChild(btn);
     });
 
-    // --- SF future countdown / overdue merge ---
+    // --- Overdue highlight rules (NEW) ---
+    // 1) Past-date (callDate < today)
+    const anyPastDate = (it.dueCalls || []).some(dc => {
+      const call = new Date(dc.callDate + 'T00:00:00');
+      return call < today0;
+    });
+
+    // 2) sfAt time crossed
+    const anySFPassed = (it.dueCalls || []).some(dc => {
+      return dc.sfAt && new Date(dc.sfAt) < now;
+    });
+
+    // 3) sfFuture countdown crossed
     const sfTarget = it.sfFuture ? new Date(it.sfFuture) : null;
     const sfOver   = !!(sfTarget && sfTarget <= now);
 
-    // overdue from dueCalls
-    const anyOverDueCalls = (it.dueCalls || []).some(dc => {
-      const base = new Date(dc.callDate + 'T00:00:00');
-      const end  = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
-      return now > end;
-    });
-
-    // ✅ single final overdue flag
-    const anyOver = sfOver || anyOverDueCalls;
+    // ✅ Final overdue flag
+    const anyOver = anyPastDate || anySFPassed || sfOver;
 
     // show card if active OR overdue
     if (activeCount > 0 || anyOver) {
@@ -372,7 +387,7 @@ async function loadDue(mode) {
       card.appendChild(client);
       card.appendChild(calls);
 
-      // countdown chip (only if we actually have a future SF)
+      // countdown chip (optional if sfFuture present)
       if (sfTarget) {
         const chip = document.createElement('div');
         chip.className = 'countdown';
@@ -383,7 +398,7 @@ async function loadDue(mode) {
           if (diff <= 0) {
             chip.textContent = 'Overdue';
             chip.classList.add('overdue');
-            card.classList.add('overdue');  // ensure card turns red too
+            card.classList.add('overdue'); // ensure card turns red
             clearInterval(t);
             return;
           }
@@ -398,7 +413,7 @@ async function loadDue(mode) {
       cardsEl.appendChild(card);
       if (activeCount > 0) shown++;
     }
-  } // <-- for-of CLOSED properly
+  } // for-of end
 
   // footer counters & empty state (AFTER loop)
   qs('#countDue').textContent = shown;
@@ -406,6 +421,7 @@ async function loadDue(mode) {
 
   startAutoRefresh();
 }
+
 
 
   // ---------- Modal Open ----------
