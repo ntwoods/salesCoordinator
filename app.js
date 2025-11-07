@@ -312,6 +312,14 @@ function openQuickOrder() {
 
       // 👇 Badge (attribute-based) — this is the only new line that matters for color tag
       card.dataset.clientColor = normColor(it.clientColor);
+      // 🔴 Check: kya is client ke saare due buttons window se bahar ho chuke?
+      const now = new Date();
+      const anyOver = (it.dueCalls || []).some(dc => {
+        const base = new Date(dc.callDate + 'T00:00:00');
+        const end  = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
+        return now > end;
+      });
+      
 
       const client = document.createElement('div');
       client.className = 'client';
