@@ -306,117 +306,100 @@ function openQuickOrder() {
 
     let shown = 0;
 
-    for (const it of items) {
-      const card = document.createElement('div');
-      card.className = 'card-sm';
+for (const it of items) {
+  const card = document.createElement('div');
+  card.className = 'card-sm';
 
-      // 👇 Badge (attribute-based) — this is the only new line that matters for color tag
-      card.dataset.clientColor = normColor(it.clientColor);
-      // 🔴 Check: kya is client ke saare due buttons window se bahar ho chuke?
-      const now = new Date();
-      const anyOver = (it.dueCalls || []).some(dc => {
-        const base = new Date(dc.callDate + 'T00:00:00');
-        const end  = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
-        return now > end;
-      });
-      
+  // color badge
+  card.dataset.clientColor = normColor(it.clientColor);
 
-      const client = document.createElement('div');
-      client.className = 'client';
-      client.textContent = it.clientName;
+  // single 'now' for this iteration
+  const now = new Date();
 
-      const calls = document.createElement('div');
-      calls.className = 'calls';
+  // --- overdue from dueCalls ---
+  const anyOverDueCalls = (it.dueCalls || []).some(dc => {
+    const base = new Date(dc.callDate + 'T00:00:00');
+    const end  = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
+    return now > end;
+  });
 
-      let activeCount = 0;
+  // --- build client & calls ---
+  const client = document.createElement('div');
+  client.className = 'client';
+  client.textContent = it.clientName;
 
-      (it.dueCalls || []).forEach(dc => {
-        const dateObj = new Date(dc.callDate + 'T00:00:00');
-// Time ho ya na ho, dono cases me week-end tak active
-        const windowEnd = weekWindowEnd(dateObj);
-        const active = now.getTime() <= windowEnd.getTime();
+  const calls = document.createElement('div');
+  calls.className = 'calls';
 
-        const btn = document.createElement('button');
-        btn.className = 'btn light';
-        btn.textContent = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-        btn.title = `Call-${dc.callN} (${dc.callDate})` + (dc.sfAt ? ` | until ${new Date(dc.sfAt).toLocaleString('en-IN')}` : '');
+  let activeCount = 0;
 
-        if (!active) {
-          btn.disabled = true;
-          btn.classList.add('disabled');
-          btn.title += ' (expired)';
-        } else {
-          activeCount++;
-          btn.addEventListener('click', () => openModal(it, dc, todayISO));
+  (it.dueCalls || []).forEach(dc => {
+    const dateObj = new Date(dc.callDate + 'T00:00:00');
+    const windowEnd = weekWindowEnd(dateObj);
+    const isActive = now <= windowEnd;
+
+    const btn = document.createElement('button');
+    btn.className = 'btn light';
+    btn.textContent = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    btn.title = `Call-${dc.callN} (${dc.callDate})` + (dc.sfAt ? ` | until ${new Date(dc.sfAt).toLocaleString('en-IN')}` : '');
+
+    if (!isActive) {
+      btn.disabled = true;
+      btn.classList.add('disabled');
+      btn.title += ' (expired)';
+    } else {
+      activeCount++;
+      btn.addEventListener('click', () => openModal(it, dc, todayISO));
+    }
+
+    calls.appendChild(btn);
+  });
+
+  // --- SF countdown / overdue from sfFuture ---
+  const sfTarget = it.sfFuture ? new Date(it.sfFuture) : null;
+  const sfOver   = !!(sfTarget && sfTarget <= now);
+
+  // combine once
+  const anyOver = sfOver || anyOverDueCalls;
+
+  if (activeCount > 0 || anyOver) {
+    if (anyOver) card.classList.add('overdue');
+
+    card.appendChild(client);
+    card.appendChild(calls);
+
+    if (sfTarget) {
+      const chip = document.createElement('div');
+      chip.className = 'countdown';
+      card.appendChild(chip);
+
+      const tick = () => {
+        const diff = sfTarget - new Date();
+        if (diff <= 0) {
+          chip.textContent = 'Overdue';
+          chip.classList.add('overdue');
+          card.classList.add('overdue');
+          clearInterval(t);
+          return;
         }
+        chip.textContent = formatDHMS(diff);
+      };
 
-        calls.appendChild(btn);
-      });
+      tick();
+      const t = setInterval(tick, 1000);
+      countdownTimers.push(t);
+    }
 
-      // SF future countdown chip (if any)
-// SF future countdown chip (if any)
-const sfFuture = it.sfFuture || null;
-
-// 👉 now capture karo
-const now = new Date();
-
-// 👉 sfFuture based overdue (include in anyOver)
-const sfTarget = sfFuture ? new Date(sfFuture) : null;
-const sfOver = !!(sfTarget && sfTarget <= now);
-
-// 🔴 dueCalls se overdue check
-const anyOverDueCalls = (it.dueCalls || []).some(dc => {
-  const base = new Date(dc.callDate + 'T00:00:00');
-  const end = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
-  return now > end;
-});
-
-// ✅ Final combine
-const anyOver = sfOver || anyOverDueCalls;
-
-if (activeCount > 0 || anyOver) {
-  if (anyOver) card.classList.add('overdue'); // 🔴 red highlight
-
-  card.appendChild(client);
-  card.appendChild(calls);
-
-  if (sfTarget) {
-    const chip = document.createElement('div');
-    chip.className = 'countdown';
-    card.appendChild(chip);
-
-    const tick = () => {
-      const nowTick = new Date();
-      const diff = sfTarget - nowTick;
-      if (diff <= 0) {
-        chip.textContent = 'Overdue';
-        chip.classList.add('overdue');
-        card.classList.add('overdue');
-        clearInterval(t);
-        return;
-      }
-      chip.textContent = formatDHMS(diff);
-    };
-
-    tick();
-    const t = setInterval(tick, 1000);
-    countdownTimers.push(t);
+    cardsEl.appendChild(card);
+    if (activeCount > 0) shown++;
   }
-
-  cardsEl.appendChild(card);
-
-  if (activeCount > 0) shown++;
 }
 
+// ⬇️ yeh teen lines loop ke BAAD rakho
+qs('#countDue').textContent = shown;
+if (!shown) emptyState.classList.remove('hidden');
+startAutoRefresh();
 
-
-    qs('#countDue').textContent = shown;
-    if (!shown) emptyState.classList.remove('hidden');
-
-    startAutoRefresh();
-    // NOTE: element-based path not used. If ever needed:
-    // attachBadge(card, it.clientColor);
-  }
 
   // ---------- Modal Open ----------
   function openModal(item, dueCall, todayISO) {
