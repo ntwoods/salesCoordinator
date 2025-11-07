@@ -355,34 +355,60 @@ function openQuickOrder() {
       });
 
       // SF future countdown chip (if any)
-      const sfFuture = (it.sfFuture || null);
-      if (sfFuture) {
-        const chip = document.createElement('div');
-        chip.className = 'countdown';
-        card.appendChild(chip);
+// SF future countdown chip (if any)
+const sfFuture = it.sfFuture || null;
 
-        const target = new Date(sfFuture);
-        const tick = () => {
-          const now = new Date();
-          const diff = target - now;
-          if (diff <= 0) { chip.textContent = 'Overdue'; chip.classList.add('overdue'); return; }
-          chip.textContent = formatDHMS(diff);
-        };
-        tick();
-        const t = setInterval(tick, 1000);
-        countdownTimers.push(t);
-      }
+// 👉 now capture karo
+const now = new Date();
 
-      // ✅ Active ho ya sirf overdue ho — card dikhao
-      if (activeCount > 0 || anyOver) {
-        if (anyOver) card.classList.add('overdue');  // 🔴 red highlight
-        card.appendChild(client);
-        card.appendChild(calls);
-        cardsEl.appendChild(card);
-      
-        // "Due" count ko sirf active cards ke liye hi rakho (tumhari current logic preserve)
-        if (activeCount > 0) shown++;
+// 👉 sfFuture based overdue (include in anyOver)
+const sfTarget = sfFuture ? new Date(sfFuture) : null;
+const sfOver = !!(sfTarget && sfTarget <= now);
+
+// 🔴 dueCalls se overdue check
+const anyOverDueCalls = (it.dueCalls || []).some(dc => {
+  const base = new Date(dc.callDate + 'T00:00:00');
+  const end = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
+  return now > end;
+});
+
+// ✅ Final combine
+const anyOver = sfOver || anyOverDueCalls;
+
+if (activeCount > 0 || anyOver) {
+  if (anyOver) card.classList.add('overdue'); // 🔴 red highlight
+
+  card.appendChild(client);
+  card.appendChild(calls);
+
+  if (sfTarget) {
+    const chip = document.createElement('div');
+    chip.className = 'countdown';
+    card.appendChild(chip);
+
+    const tick = () => {
+      const nowTick = new Date();
+      const diff = sfTarget - nowTick;
+      if (diff <= 0) {
+        chip.textContent = 'Overdue';
+        chip.classList.add('overdue');
+        card.classList.add('overdue');
+        clearInterval(t);
+        return;
       }
+      chip.textContent = formatDHMS(diff);
+    };
+
+    tick();
+    const t = setInterval(tick, 1000);
+    countdownTimers.push(t);
+  }
+
+  cardsEl.appendChild(card);
+
+  if (activeCount > 0) shown++;
+}
+
 
 
     qs('#countDue').textContent = shown;
