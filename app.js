@@ -334,7 +334,6 @@ function openQuickOrder() {
         const dateObj = new Date(dc.callDate + 'T00:00:00');
 // Time ho ya na ho, dono cases me week-end tak active
         const windowEnd = weekWindowEnd(dateObj);
-        const now = new Date();
         const active = now.getTime() <= windowEnd.getTime();
 
         const btn = document.createElement('button');
