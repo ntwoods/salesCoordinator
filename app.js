@@ -373,13 +373,17 @@ function openQuickOrder() {
         countdownTimers.push(t);
       }
 
-      if (activeCount > 0) {
+      // ✅ Active ho ya sirf overdue ho — card dikhao
+      if (activeCount > 0 || anyOver) {
+        if (anyOver) card.classList.add('overdue');  // 🔴 red highlight
         card.appendChild(client);
         card.appendChild(calls);
         cardsEl.appendChild(card);
-        shown++;
+      
+        // "Due" count ko sirf active cards ke liye hi rakho (tumhari current logic preserve)
+        if (activeCount > 0) shown++;
       }
-    }
+
 
     qs('#countDue').textContent = shown;
     if (!shown) emptyState.classList.remove('hidden');
