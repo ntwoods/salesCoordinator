@@ -276,129 +276,136 @@ function openQuickOrder() {
   }
 
   // ---------- Load & Render Due ----------
-  async function loadDue(mode) {
-    countdownTimers.forEach(clearInterval);
-    countdownTimers = [];
-    cardsEl.innerHTML = '';
-    emptyState.classList.add('hidden');
+// ---------- Load & Render Due ----------
+async function loadDue(mode) {
+  // cleanup old timers + reset UI
+  countdownTimers.forEach(clearInterval);
+  countdownTimers = [];
+  cardsEl.innerHTML = '';
+  emptyState.classList.add('hidden');
 
-    if (mode !== 'silent') toggleLoader(true);
-    const data = await apiGET('due');
-    if (mode !== 'silent') toggleLoader(false);
+  if (mode !== 'silent') toggleLoader(true);
+  const data = await apiGET('due');
+  if (mode !== 'silent') toggleLoader(false);
 
-    const todayISO = data.today;
-    const today = new Date(todayISO);
-    todayTag.textContent = today.toLocaleDateString('en-IN', {
-      weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
+  const todayISO = data.today;
+  const today = new Date(todayISO);
+  todayTag.textContent = today.toLocaleDateString('en-IN', {
+    weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
+  });
+
+  const items = data.items || [];
+
+  // Overdue count (summary chip)
+  qs('#countOverdue').textContent = items.reduce((acc, it) => {
+    const over = (it.dueCalls || []).some(dc => {
+      const base = new Date(dc.callDate + 'T00:00:00');
+      const end  = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
+      return (new Date() > end);
+    });
+    return acc + (over ? 1 : 0);
+  }, 0);
+
+  let shown = 0;
+
+  // ===== render cards =====
+  for (const it of items) {
+    const card = document.createElement('div');
+    card.className = 'card-sm';
+
+    // badge color (data-attr; CSS handles it)
+    card.dataset.clientColor = normColor(it.clientColor);
+
+    const now = new Date();
+
+    // client header
+    const client = document.createElement('div');
+    client.className = 'client';
+    client.textContent = it.clientName;
+
+    // calls list
+    const calls = document.createElement('div');
+    calls.className = 'calls';
+
+    // dueCalls buttons
+    let activeCount = 0;
+    (it.dueCalls || []).forEach(dc => {
+      const dateObj   = new Date(dc.callDate + 'T00:00:00');
+      const windowEnd = weekWindowEnd(dateObj);             // week window end
+      const isActive  = now.getTime() <= windowEnd.getTime();
+
+      const btn = document.createElement('button');
+      btn.className = 'btn light';
+      btn.textContent = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+      btn.title = `Call-${dc.callN} (${dc.callDate})` + (dc.sfAt ? ` | until ${new Date(dc.sfAt).toLocaleString('en-IN')}` : '');
+
+      if (!isActive) {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        btn.title += ' (expired)';
+      } else {
+        activeCount++;
+        btn.addEventListener('click', () => openModal(it, dc, todayISO));
+      }
+
+      calls.appendChild(btn);
     });
 
-    const items = data.items || [];
+    // --- SF future countdown / overdue merge ---
+    const sfTarget = it.sfFuture ? new Date(it.sfFuture) : null;
+    const sfOver   = !!(sfTarget && sfTarget <= now);
 
-    // Overdue count
-    qs('#countOverdue').textContent = items.reduce((acc, it) => {
-      const anyOver = (it.dueCalls || []).some(dc => {
-        const base = new Date(dc.callDate + 'T00:00:00');
-        const end = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
-        return (new Date() > end);
-      });
-      return acc + (anyOver ? 1 : 0);
-    }, 0);
+    // overdue from dueCalls
+    const anyOverDueCalls = (it.dueCalls || []).some(dc => {
+      const base = new Date(dc.callDate + 'T00:00:00');
+      const end  = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
+      return now > end;
+    });
 
-    let shown = 0;
+    // ✅ single final overdue flag
+    const anyOver = sfOver || anyOverDueCalls;
 
-for (const it of items) {
-  const card = document.createElement('div');
-  card.className = 'card-sm';
+    // show card if active OR overdue
+    if (activeCount > 0 || anyOver) {
+      if (anyOver) card.classList.add('overdue');
 
-  // color badge
-  card.dataset.clientColor = normColor(it.clientColor);
+      card.appendChild(client);
+      card.appendChild(calls);
 
-  // single 'now' for this iteration
-  const now = new Date();
+      // countdown chip (only if we actually have a future SF)
+      if (sfTarget) {
+        const chip = document.createElement('div');
+        chip.className = 'countdown';
+        card.appendChild(chip);
 
-  // --- overdue from dueCalls ---
-  const anyOverDueCalls = (it.dueCalls || []).some(dc => {
-    const base = new Date(dc.callDate + 'T00:00:00');
-    const end  = dc.sfAt ? new Date(dc.sfAt) : weekWindowEnd(base);
-    return now > end;
-  });
+        const tick = () => {
+          const diff = sfTarget - new Date();
+          if (diff <= 0) {
+            chip.textContent = 'Overdue';
+            chip.classList.add('overdue');
+            card.classList.add('overdue');  // ensure card turns red too
+            clearInterval(t);
+            return;
+          }
+          chip.textContent = formatDHMS(diff);
+        };
 
-  // --- build client & calls ---
-  const client = document.createElement('div');
-  client.className = 'client';
-  client.textContent = it.clientName;
+        tick();
+        const t = setInterval(tick, 1000);
+        countdownTimers.push(t);
+      }
 
-  const calls = document.createElement('div');
-  calls.className = 'calls';
-
-  let activeCount = 0;
-
-  (it.dueCalls || []).forEach(dc => {
-    const dateObj = new Date(dc.callDate + 'T00:00:00');
-    const windowEnd = weekWindowEnd(dateObj);
-    const isActive = now <= windowEnd;
-
-    const btn = document.createElement('button');
-    btn.className = 'btn light';
-    btn.textContent = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-    btn.title = `Call-${dc.callN} (${dc.callDate})` + (dc.sfAt ? ` | until ${new Date(dc.sfAt).toLocaleString('en-IN')}` : '');
-
-    if (!isActive) {
-      btn.disabled = true;
-      btn.classList.add('disabled');
-      btn.title += ' (expired)';
-    } else {
-      activeCount++;
-      btn.addEventListener('click', () => openModal(it, dc, todayISO));
+      cardsEl.appendChild(card);
+      if (activeCount > 0) shown++;
     }
+  } // <-- for-of CLOSED properly
 
-    calls.appendChild(btn);
-  });
+  // footer counters & empty state (AFTER loop)
+  qs('#countDue').textContent = shown;
+  if (!shown) emptyState.classList.remove('hidden');
 
-  // --- SF countdown / overdue from sfFuture ---
-  const sfTarget = it.sfFuture ? new Date(it.sfFuture) : null;
-  const sfOver   = !!(sfTarget && sfTarget <= now);
-
-  // combine once
-  const anyOver = sfOver || anyOverDueCalls;
-
-  if (activeCount > 0 || anyOver) {
-    if (anyOver) card.classList.add('overdue');
-
-    card.appendChild(client);
-    card.appendChild(calls);
-
-    if (sfTarget) {
-      const chip = document.createElement('div');
-      chip.className = 'countdown';
-      card.appendChild(chip);
-
-      const tick = () => {
-        const diff = sfTarget - new Date();
-        if (diff <= 0) {
-          chip.textContent = 'Overdue';
-          chip.classList.add('overdue');
-          card.classList.add('overdue');
-          clearInterval(t);
-          return;
-        }
-        chip.textContent = formatDHMS(diff);
-      };
-
-      tick();
-      const t = setInterval(tick, 1000);
-      countdownTimers.push(t);
-    }
-
-    cardsEl.appendChild(card);
-    if (activeCount > 0) shown++;
-  }
+  startAutoRefresh();
 }
-
-// ⬇️ yeh teen lines loop ke BAAD rakho
-qs('#countDue').textContent = shown;
-if (!shown) emptyState.classList.remove('hidden');
-startAutoRefresh();
 
 
   // ---------- Modal Open ----------
