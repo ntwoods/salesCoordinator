@@ -42,6 +42,11 @@
   let countdownTimers = [];
   let autoRefreshTimer = null;
   let autoRefreshPaused = false;
+  // === Globals for modal context ===
+  let currentItem = null;  // full item from /due
+  let currentDC   = null;  // selected call object { callN, callDate, sfAt }
+  let countdownTimers = []; // if you already have, keep single copy
+  
 
   // runtime flags for iframe handshake
   let childDone = false;
