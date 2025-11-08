@@ -640,3 +640,42 @@ textarea:focus-visible {
   box-shadow: var(--shadow);
 }
 .card-sm.overdue .client { color: #991b1b; }
+
+
+/* ---- Remark Panel (expand/collapse) ---- */
+.remark {
+  background: var(--accent);
+  border: 1px solid var(--brand-light);
+  border-left: 4px solid var(--brand);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 6px;
+  box-shadow: var(--shadow-sm);
+}
+
+.remark-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+.remark-body {
+  font-size: 12.5px;              /* compact & readable */
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;           /* preserve newlines if any */
+  word-break: break-word;
+}
+
+.card-sm.expanded-remark {
+  /* thoda breathing space when expanded */
+  padding-bottom: 22px;
+}
+
+/* Small toggle button look (reuse .btn.light) */
+.btn.remark-toggle {
+  padding: 7px 12px;
+  font-size: 12px;
+}
