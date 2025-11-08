@@ -679,3 +679,51 @@ textarea:focus-visible {
   padding: 7px 12px;
   font-size: 12px;
 }
+
+
+
+/* ---- Remark Panel (expand/collapse) ---- */
+.remark {
+  background: var(--accent, #f7fbff);
+  border: 1px solid var(--brand-light, #cfe8ff);
+  border-left: 4px solid var(--brand, #1976d2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  box-shadow: var(--shadow-sm, 0 2px 6px rgba(0,0,0,0.06));
+}
+
+.remark-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary, #5b6b7a);
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+.remark-body {
+  font-size: 12.5px;              /* compact & readable */
+  line-height: 1.45;
+  color: var(--text, #213547);
+  white-space: pre-wrap;           /* preserve newlines if any */
+  word-break: break-word;
+}
+
+.card-sm.expanded-remark {
+  padding-bottom: 22px;
+}
+
+/* Small toggle button (reuse .btn styles) */
+.btn.remark-toggle {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+/* (Optional) ensure badge z-index lower than modal */
+.badge, .client-badge {
+  position: relative;
+  z-index: 1;
+}
+.modal, .modal-backdrop {
+  z-index: 50;
+}
