@@ -325,123 +325,90 @@ async function loadDue(mode) {
 
   let shown = 0;
 
-  // ===== render cards =====
-  for (const it of items) {
-    const card = document.createElement('div');
-    card.className = 'card-sm';
-    card.dataset.clientColor = normColor(it.clientColor);
+// ===== RENDER CARDS (FINAL FULL BLOCK) =====
+for (const it of items) {
+  const card = document.createElement('div');
+  card.className = 'card-sm';
+  card.dataset.clientColor = (it.clientColor || '').toString().trim().toLowerCase();
 
-    const now = new Date();
+  const client = document.createElement('div');
+  client.className = 'client';
+  client.textContent = it.clientName || '—';
 
-    // client header
-    const client = document.createElement('div');
-    client.className = 'client';
-    client.textContent = it.clientName;
+  const calls = document.createElement('div');
+  calls.className = 'calls';
 
-    // calls list (buttons)
-    const calls = document.createElement('div');
-    calls.className = 'calls';
+  // Backend already filters current-week + status-blank followups
+  (it.dueCalls || []).forEach(dc => {
+    const btn = document.createElement('button');
+    btn.className = 'btn light';
 
-    let activeCount = 0;
-    (it.dueCalls || []).forEach(dc => {
-      const dateObj   = new Date(dc.callDate + 'T00:00:00');
-      const windowEnd = weekWindowEnd(dateObj);
-      const isActive  = now.getTime() <= windowEnd.getTime();
+    const d = new Date(dc.callDate + 'T00:00:00');
+    btn.textContent = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    btn.title = `Call-${dc.callN} • ${dc.callDate}` + (dc.sfAt ? ` • ${new Date(dc.sfAt).toLocaleString('en-IN')}` : '');
 
-      const btn = document.createElement('button');
-      btn.className = 'btn light';
-      btn.textContent = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-      btn.title = `Call-${dc.callN} (${dc.callDate})` + (dc.sfAt ? ` | until ${new Date(dc.sfAt).toLocaleString('en-IN')}` : '');
+    btn.addEventListener('click', () => openModal(it, dc));
+    calls.appendChild(btn);
+  });
 
-      if (!isActive) {
-        btn.disabled = true;
-        btn.classList.add('disabled');
-        btn.title += ' (expired)';
-      } else {
-        activeCount++;
-        btn.addEventListener('click', () => openModal(it, dc, todayISO));
-      }
+  // --- Show/Hide Remark (previous remark from Sheet1 O:AS) ---
+  if (it.remarkText && String(it.remarkText).trim() !== '') {
+    const btnRemark = document.createElement('button');
+    btnRemark.className = 'btn light remark-toggle';
+    btnRemark.textContent = 'Show Remark';
+    calls.appendChild(btnRemark);
 
-      calls.appendChild(btn);
+    const remarkWrap = document.createElement('div');
+    remarkWrap.className = 'remark hidden';
+
+    const whenLabel = it.remarkDay ? `Day ${String(it.remarkDay).padStart(2,'0')}` : 'Previous';
+    remarkWrap.innerHTML = `
+      <div class="remark-title">Previous Remark · <strong>${whenLabel}</strong></div>
+      <div class="remark-body"></div>
+    `;
+    remarkWrap.querySelector('.remark-body').textContent = String(it.remarkText);
+
+    btnRemark.addEventListener('click', () => {
+      const hidden = remarkWrap.classList.contains('hidden');
+      remarkWrap.classList.toggle('hidden', !hidden);
+      card.classList.toggle('expanded-remark', hidden);
+      btnRemark.textContent = hidden ? 'Hide Remark' : 'Show Remark';
     });
 
-    // Overdue highlight rules
-    const anyPastDate = (it.dueCalls || []).some(dc => {
-      const call = new Date(dc.callDate + 'T00:00:00');
-      return call < today0;
-    });
-    const anySFPassed = (it.dueCalls || []).some(dc => dc.sfAt && new Date(dc.sfAt) < now);
-    const sfTarget = it.sfFuture ? new Date(it.sfFuture) : null;
-    const sfOver   = !!(sfTarget && sfTarget <= now);
-    const anyOver  = anyPastDate || anySFPassed || sfOver;
+    card.appendChild(remarkWrap);
+  }
 
-    // show card if active OR overdue
-    if (activeCount > 0 || anyOver) {
-      if (anyOver) card.classList.add('overdue');
+  // --- Countdown chip (if earliest SF future datetime) ---
+  if (it.sfFuture) {
+    const sfTarget = new Date(it.sfFuture);
+    if (!isNaN(sfTarget.getTime())) {
+      const chip = document.createElement('div');
+      chip.className = 'countdown';
+      card.appendChild(chip);
 
-      card.appendChild(client);
-      card.appendChild(calls);
+      const tick = () => {
+        const diff = sfTarget - new Date();
+        if (diff <= 0) {
+          chip.textContent = 'Overdue';
+          chip.classList.add('overdue');
+          return;
+        }
+        chip.textContent = formatDHMS(diff);
+      };
 
-      // -------- NEW: Remark toggle (only if remark exists) --------
-      if (it.remarkText && String(it.remarkText).trim() !== '') {
-        // Toggle button
-        const btnRemark = document.createElement('button');
-        btnRemark.className = 'btn light remark-toggle';
-        btnRemark.textContent = 'Show Remark';
-
-        // Place toggle with the call buttons line
-        calls.appendChild(btnRemark);
-
-        // Hidden remark panel
-        const remarkWrap = document.createElement('div');
-        remarkWrap.className = 'remark hidden';
-
-        const whenLabel = it.remarkDay ? `Day ${String(it.remarkDay).padStart(2,'0')}` : 'Previous';
-        remarkWrap.innerHTML = `
-          <div class="remark-title">Previous Remark · <strong>${whenLabel}</strong></div>
-          <div class="remark-body"></div>
-        `;
-        remarkWrap.querySelector('.remark-body').textContent = String(it.remarkText);
-
-        // Toggle logic
-        btnRemark.addEventListener('click', () => {
-          const isHidden = remarkWrap.classList.contains('hidden');
-          remarkWrap.classList.toggle('hidden', !isHidden);
-          card.classList.toggle('expanded-remark', isHidden);
-          btnRemark.textContent = isHidden ? 'Hide Remark' : 'Show Remark';
-        });
-
-        card.appendChild(remarkWrap);
-      }
-      // -------- /NEW --------
-
-      // countdown chip (optional if sfFuture present)
-      if (sfTarget) {
-        const chip = document.createElement('div');
-        chip.className = 'countdown';
-        card.appendChild(chip);
-
-        const tick = () => {
-          const diff = sfTarget - new Date();
-          if (diff <= 0) {
-            chip.textContent = 'Overdue';
-            chip.classList.add('overdue');
-            card.classList.add('overdue');
-            clearInterval(t);
-            return;
-          }
-          chip.textContent = formatDHMS(diff);
-        };
-
-        tick();
-        const t = setInterval(tick, 1000);
-        countdownTimers.push(t);
-      }
-
-      cardsEl.appendChild(card);
-      if (activeCount > 0) shown++;
+      tick();
+      const t = setInterval(tick, 1000);
+      countdownTimers.push(t);
     }
-  } // for-of end
+  }
+
+  // Assemble and append card
+  card.appendChild(client);
+  card.appendChild(calls);
+  cardsEl.appendChild(card);
+}
+// ===== /RENDER CARDS =====
+
 
   // footer counters & empty state (AFTER loop)
   qs('#countDue').textContent = shown;
