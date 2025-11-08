@@ -462,22 +462,18 @@ html, body {
 }
 
 /* ---- Color Badges (Attribute-based) ---- */
-/* Only show badge if data-client-color is not empty */
 .card-sm[data-client-color]:not([data-client-color=""])::after {
   content: attr(data-client-color);
   position: absolute;
   top: 12px; 
   right: 12px;
   display: inline-flex;
-  align-items: center;
+  align-items: center; 
   justify-content: center;
-  min-width: 72px;
-  height: 28px;
+  min-width: 72px; height: 28px;
   padding: 0 12px;
   border-radius: 6px;
-  font-size: 11px; 
-  font-weight: 700; 
-  letter-spacing: 0.5px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
   text-transform: uppercase;
   border: 1px solid transparent;
   box-shadow: var(--shadow-sm);
@@ -486,65 +482,31 @@ html, body {
 
 .card-sm[data-client-color="Red"]::after { 
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #991b1b; 
-  border-color: #fca5a5;
+  color: #991b1b; border-color: #fca5a5;
 }
-
 .card-sm[data-client-color="Yellow"]::after { 
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  color: #92400e; 
-  border-color: #fbbf24;
+  color: #92400e; border-color: #fbbf24;
 }
-
 .card-sm[data-client-color="Green"]::after { 
   background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #065f46; 
-  border-color: #6ee7b7;
+  color: #065f46; border-color: #6ee7b7;
 }
-
 /* When countdown exists alongside badge */
-.card-sm[data-client-color]:not([data-client-color=""]) .countdown {
-  top: 48px; /* Move countdown below badge */
-}
+.card-sm[data-client-color]:not([data-client-color=""]) .countdown { top: 48px; }
 
 /* Alternative: Element-based badge (if needed as fallback) */
 .client-badge {
-  position: absolute;
-  top: 12px; 
-  right: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 72px;
-  height: 28px;
-  padding: 0 12px;
-  border-radius: 6px;
-  font-size: 11px; 
-  font-weight: 700; 
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  border: 1px solid transparent;
-  box-shadow: var(--shadow-sm);
+  position: absolute; top: 12px; right: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 72px; height: 28px; padding: 0 12px;
+  border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase; border: 1px solid transparent; box-shadow: var(--shadow-sm);
   z-index: 1;
 }
-
-.client-badge.is-red { 
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #991b1b; 
-  border-color: #fca5a5;
-}
-
-.client-badge.is-yellow { 
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  color: #92400e; 
-  border-color: #fbbf24;
-}
-
-.client-badge.is-green { 
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #065f46; 
-  border-color: #6ee7b7;
-}
+.client-badge.is-red    { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #991b1b; border-color: #fca5a5; }
+.client-badge.is-yellow { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e; border-color: #fbbf24; }
+.client-badge.is-green  { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; border-color: #6ee7b7; }
 
 /* ---- Legend ---- */
 .content > .muted.small {
@@ -555,175 +517,56 @@ html, body {
   border: 1px solid var(--border);
   text-align: center;
 }
-
-.content > .muted.small span {
-  font-weight: 500;
-}
+.content > .muted.small span { font-weight: 500; }
 
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
-  .topbar {
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 16px 20px;
-  }
-  
-  .stats {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .profile {
-    margin-left: 0;
-    padding-left: 0;
-    border-left: none;
-  }
+  .topbar { flex-wrap: wrap; gap: 12px; padding: 16px 20px; }
+  .stats { width: 100%; justify-content: space-between; }
+  .profile { margin-left: 0; padding-left: 0; border-left: none; }
 }
-
 @media (max-width: 640px) {
-  .login-card {
-    padding: 32px 24px;
-  }
-  
-  .content {
-    padding: 20px 16px;
-  }
-  
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .client {
-    font-size: 15px;
-    padding-right: 80px;
-  }
-  
-  .card-sm[data-client-color]::after {
-    min-width: 64px;
-    font-size: 10px;
-  }
-  
-  .modal-content {
-    padding: 20px;
-  }
+  .login-card { padding: 32px 24px; }
+  .content { padding: 20px 16px; }
+  .grid { grid-template-columns: 1fr; }
+  .client { font-size: 15px; padding-right: 80px; }
+  .card-sm[data-client-color]::after { min-width: 64px; font-size: 10px; }
+  .modal-content { padding: 20px; }
 }
 
 /* ---- Additional refinements ---- */
-#userEmail {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-#countDue, #countOverdue {
-  font-weight: 700;
-}
-
-/* Smooth scroll for the page */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Focus styles for accessibility */
+#userEmail { font-size: 13px; color: var(--text-secondary); }
+#countDue, #countOverdue { font-weight: 700; }
+html { scroll-behavior: smooth; }
 button:focus-visible,
 select:focus-visible,
 input:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
+textarea:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 /* ---- Overdue Card Highlight ---- */
 .card-sm.overdue {
-  background: #fff1f2;         /* light red */
-  border-color: #fecaca;
-  box-shadow: var(--shadow);
+  background: #fff1f2; border-color: #fecaca; box-shadow: var(--shadow);
 }
 .card-sm.overdue .client { color: #991b1b; }
 
-
-/* ---- Remark Panel (expand/collapse) ---- */
+/* ====== Remark Panel (NEW) ====== */
 .remark {
   background: var(--accent);
   border: 1px solid var(--brand-light);
   border-left: 4px solid var(--brand);
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin-top: 6px;
-  box-shadow: var(--shadow-sm);
-}
-
-.remark-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-  letter-spacing: 0.2px;
-}
-
-.remark-body {
-  font-size: 12.5px;              /* compact & readable */
-  line-height: 1.45;
-  color: var(--text);
-  white-space: pre-wrap;           /* preserve newlines if any */
-  word-break: break-word;
-}
-
-.card-sm.expanded-remark {
-  /* thoda breathing space when expanded */
-  padding-bottom: 22px;
-}
-
-/* Small toggle button look (reuse .btn.light) */
-.btn.remark-toggle {
-  padding: 7px 12px;
-  font-size: 12px;
-}
-
-
-
-/* ---- Remark Panel (expand/collapse) ---- */
-.remark {
-  background: var(--accent, #f7fbff);
-  border: 1px solid var(--brand-light, #cfe8ff);
-  border-left: 4px solid var(--brand, #1976d2);
   border-radius: 10px;
   padding: 10px 12px;
   margin-top: 8px;
-  box-shadow: var(--shadow-sm, 0 2px 6px rgba(0,0,0,0.06));
+  box-shadow: var(--shadow-sm);
 }
-
 .remark-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-secondary, #5b6b7a);
-  margin-bottom: 6px;
-  letter-spacing: 0.2px;
+  font-size: 12px; font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 6px; letter-spacing: 0.2px;
 }
-
 .remark-body {
-  font-size: 12.5px;              /* compact & readable */
-  line-height: 1.45;
-  color: var(--text, #213547);
-  white-space: pre-wrap;           /* preserve newlines if any */
-  word-break: break-word;
+  font-size: 12.5px; line-height: 1.45;
+  color: var(--text); white-space: pre-wrap; word-break: break-word;
 }
-
-.card-sm.expanded-remark {
-  padding-bottom: 22px;
-}
-
-/* Small toggle button (reuse .btn styles) */
-.btn.remark-toggle {
-  padding: 7px 12px;
-  font-size: 12px;
-}
-
-/* (Optional) ensure badge z-index lower than modal */
-.badge, .client-badge {
-  position: relative;
-  z-index: 1;
-}
-.modal, .modal-backdrop {
-  z-index: 50;
-}
+.card-sm.expanded-remark { padding-bottom: 22px; }
+.btn.remark-toggle { padding: 7px 12px; font-size: 12px; }
