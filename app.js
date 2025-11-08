@@ -333,15 +333,14 @@ async function loadDue(mode) {
     client.className = 'client';
     client.textContent = it.clientName;
 
-    // calls list
+    // calls list (buttons)
     const calls = document.createElement('div');
     calls.className = 'calls';
 
-    // dueCalls buttons (enable/disable = weekWindowEnd based)
     let activeCount = 0;
     (it.dueCalls || []).forEach(dc => {
       const dateObj   = new Date(dc.callDate + 'T00:00:00');
-      const windowEnd = weekWindowEnd(dateObj);                 // keep old window rule
+      const windowEnd = weekWindowEnd(dateObj);
       const isActive  = now.getTime() <= windowEnd.getTime();
 
       const btn = document.createElement('button');
@@ -361,24 +360,15 @@ async function loadDue(mode) {
       calls.appendChild(btn);
     });
 
-    // --- Overdue highlight rules (NEW) ---
-    // 1) Past-date (callDate < today)
+    // Overdue highlight rules
     const anyPastDate = (it.dueCalls || []).some(dc => {
       const call = new Date(dc.callDate + 'T00:00:00');
       return call < today0;
     });
-
-    // 2) sfAt time crossed
-    const anySFPassed = (it.dueCalls || []).some(dc => {
-      return dc.sfAt && new Date(dc.sfAt) < now;
-    });
-
-    // 3) sfFuture countdown crossed
+    const anySFPassed = (it.dueCalls || []).some(dc => dc.sfAt && new Date(dc.sfAt) < now);
     const sfTarget = it.sfFuture ? new Date(it.sfFuture) : null;
     const sfOver   = !!(sfTarget && sfTarget <= now);
-
-    // ✅ Final overdue flag
-    const anyOver = anyPastDate || anySFPassed || sfOver;
+    const anyOver  = anyPastDate || anySFPassed || sfOver;
 
     // show card if active OR overdue
     if (activeCount > 0 || anyOver) {
@@ -386,6 +376,39 @@ async function loadDue(mode) {
 
       card.appendChild(client);
       card.appendChild(calls);
+
+      // -------- NEW: Remark toggle (only if remark exists) --------
+      if (it.remarkText && String(it.remarkText).trim() !== '') {
+        // Toggle button
+        const btnRemark = document.createElement('button');
+        btnRemark.className = 'btn light remark-toggle';
+        btnRemark.textContent = 'Show Remark';
+
+        // Place toggle with the call buttons line
+        calls.appendChild(btnRemark);
+
+        // Hidden remark panel
+        const remarkWrap = document.createElement('div');
+        remarkWrap.className = 'remark hidden';
+
+        const whenLabel = it.remarkDay ? `Day ${String(it.remarkDay).padStart(2,'0')}` : 'Previous';
+        remarkWrap.innerHTML = `
+          <div class="remark-title">Previous Remark · <strong>${whenLabel}</strong></div>
+          <div class="remark-body"></div>
+        `;
+        remarkWrap.querySelector('.remark-body').textContent = String(it.remarkText);
+
+        // Toggle logic
+        btnRemark.addEventListener('click', () => {
+          const isHidden = remarkWrap.classList.contains('hidden');
+          remarkWrap.classList.toggle('hidden', !isHidden);
+          card.classList.toggle('expanded-remark', isHidden);
+          btnRemark.textContent = isHidden ? 'Hide Remark' : 'Show Remark';
+        });
+
+        card.appendChild(remarkWrap);
+      }
+      // -------- /NEW --------
 
       // countdown chip (optional if sfFuture present)
       if (sfTarget) {
@@ -398,7 +421,7 @@ async function loadDue(mode) {
           if (diff <= 0) {
             chip.textContent = 'Overdue';
             chip.classList.add('overdue');
-            card.classList.add('overdue'); // ensure card turns red
+            card.classList.add('overdue');
             clearInterval(t);
             return;
           }
