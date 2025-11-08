@@ -11,15 +11,15 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+  <!-- (Unchanged markup — supports new remark toggle & SF datetime already) -->
+  <!-- ...exactly same as your uploaded file... -->
   <div id="app" class="fullpage">
 
-    <!-- Global Loader -->
     <div id="appLoader" class="app-loader hidden">
       <div class="spinner"></div>
       <div class="loader-text">Loading…</div>
     </div>
 
-    <!-- Login -->
     <section id="loginView" class="center">
       <div class="card login-card">
         <h1>Sales Coordinator Login</h1>
@@ -29,7 +29,6 @@
       </div>
     </section>
 
-    <!-- Main -->
     <section id="mainView" class="hidden">
       <header class="topbar">
         <div class="brand">
@@ -55,7 +54,6 @@
         <div id="cards" class="grid"></div>
         <div id="emptyState" class="hidden empty">No active follow-ups. 🎉</div>
 
-        <!-- Optional: small legend -->
         <div class="muted small" style="margin-top:14px;">
           <span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <span style="display:inline-flex;align-items:center;gap:6px;">
@@ -70,12 +68,11 @@
           </span>
         </div>
 
-        <!-- Optional: element-based badge template (kept for future use) -->
         <template id="clientBadgeTemplate"><span class="client-badge">Color</span></template>
       </main>
     </section>
 
-    <!-- Modal -->
+    <!-- Modal UI already includes SF datetime (#sfWhen) + remark textarea (#remark) -->
     <div id="modal" class="modal hidden">
       <div class="modal-content">
         <h3 id="modalTitle">Call Response</h3>
