@@ -490,7 +490,7 @@
       outcome,
       remark,
       callN: modalContext.callN,
-      plannedDate: modalContext.callDate,
+      plannedDate: modalContext.dateISO,
     };
 
     if (outcome === 'SF') {
