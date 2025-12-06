@@ -373,7 +373,18 @@ const renderRemarks = async () => {
     sfRemarks.forEach(r => {
       html += `
         <div class="remark-body">
-          <strong>${r.ts}</strong><br>
+        function formatSFDate(iso) {
+          const d = new Date(iso);
+          return d.toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          }).replace(',', '');
+        }
+        <strong>${formatSFDate(r.ts)}</strong><br>
           ${(r.remark || '(no remark)').trim()}
         </div>
         <br>
