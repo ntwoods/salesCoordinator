@@ -324,66 +324,77 @@
         calls.appendChild(btn);
       });
 
-      // ---- Show/Hide Previous Remark (from Sheet1 O:AS) ----
-// ---- Combined Remarks (Sheet1 + SF) ----
-(async () => {
-  const sheet1Remark = it.remarkText ? String(it.remarkText).trim() : '';
-  const sfRemarks = await apiGETSfRemarks(it.clientName);
+// ---- Combined Remarks (Sheet1 + SF history) ----
+const renderRemarks = async () => {
+  const sheet1Remark = (it.remarkText || '').trim();
+  let sfRemarks = [];
 
-  if (sheet1Remark || sfRemarks.length > 0) {
-    // Show/Hide Button
-    const btnRemark = document.createElement('button');
-    btnRemark.className = 'btn light remark-toggle';
-    btnRemark.textContent = 'Show Remarks';
-    calls.appendChild(btnRemark);
+  try {
+    sfRemarks = await apiGETSfRemarks(it.clientName);
+  } catch (e) {
+    console.warn('SF remark fetch failed for', it.clientName, e);
+  }
 
-    // Wrapper for content
-    const remarkWrap = document.createElement('div');
-    remarkWrap.className = 'remark hidden';
+  // If no remarks → exit
+  if (!sheet1Remark && sfRemarks.length === 0) return;
 
-    let html = '';
+  // Create button
+  const btnRemark = document.createElement('button');
+  btnRemark.className = 'btn light remark-toggle';
+  btnRemark.textContent = 'Show Remarks';
+  calls.appendChild(btnRemark);
 
-    // ----- Sheet1 Remark -----
+  // Create panel
+  const remarkWrap = document.createElement('div');
+  remarkWrap.className = 'remark hidden';
+
+  let html = '';
+
+  // ---- Sheet1 remark ----
+  if (sheet1Remark) {
+    const whenLabel = it.remarkDay
+      ? `Day ${String(it.remarkDay).padStart(2, '0')}`
+      : 'Previous';
+
+    html += `
+      <div class="remark-title">Sheet1 Remark · <strong>${whenLabel}</strong></div>
+      <div class="remark-body">${sheet1Remark}</div>
+    `;
+  }
+
+  // ---- SF remark history ----
+  if (sfRemarks.length > 0) {
     if (sheet1Remark) {
-      const whenLabel = it.remarkDay ? `Day ${String(it.remarkDay).padStart(2, '0')}` : 'Previous';
+      html += `<hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb;">`;
+    }
+
+    html += `<div class="remark-title">SF Follow-up History</div>`;
+
+    sfRemarks.forEach(r => {
       html += `
-        <div class="remark-title">Sheet1 Remark · <strong>${whenLabel}</strong></div>
-        <div class="remark-body">${sheet1Remark}</div>
+        <div class="remark-body">
+          <strong>${r.ts}</strong><br>
+          ${(r.remark || '(no remark)').trim()}
+        </div>
+        <br>
       `;
-    }
-
-    // ----- Divider -----
-    if (sheet1Remark && sfRemarks.length > 0) {
-      html += `<hr style="margin:10px 0;border:none;border-top:1px solid #ddd;">`;
-    }
-
-    // ----- SF Remarks List -----
-    if (sfRemarks.length > 0) {
-      html += `<div class="remark-title">SF Follow-up History</div>`;
-      sfRemarks.forEach(r => {
-        html += `
-          <div class="remark-body">
-            <strong>${r.ts}</strong><br>
-            ${r.remark || '(no remark)'}
-          </div>
-          <br>
-        `;
-      });
-    }
-
-    remarkWrap.innerHTML = html;
-    card.appendChild(remarkWrap);
-
-    // Toggle
-    btnRemark.addEventListener('click', () => {
-      const hidden = remarkWrap.classList.contains('hidden');
-      remarkWrap.classList.toggle('hidden', !hidden);
-      card.classList.toggle('expanded-remark', hidden);
-      btnRemark.textContent = hidden ? 'Hide Remarks' : 'Show Remarks';
     });
   }
-})();
 
+  remarkWrap.innerHTML = html;
+  card.appendChild(remarkWrap);
+
+  // toggle
+  btnRemark.addEventListener('click', () => {
+    const hidden = remarkWrap.classList.contains('hidden');
+    remarkWrap.classList.toggle('hidden', !hidden);
+    card.classList.toggle('expanded-remark', hidden);
+    btnRemark.textContent = hidden ? 'Hide Remarks' : 'Show Remarks';
+  });
+};
+
+// call renderer (async but after DOM elements exist)
+renderRemarks();
       // --- Overdue highlights ---
       const anyPastDate = (it.dueCalls || []).some(dc => {
         const call = new Date(dc.callDate + 'T00:00:00');
