@@ -84,6 +84,14 @@
   }
 
   // ---------- API helpers ----------
+  async function apiGETSfRemarks(clientName) {
+    const url = `${CFG.GAS_BASE}?path=sfRemarks&client=${encodeURIComponent(clientName)}&id_token=${encodeURIComponent(idToken)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Failed fetching SF remarks');
+    return json.remarks || [];
+  }
+
   async function apiGET(path) {
     const url = `${CFG.GAS_BASE}?path=${encodeURIComponent(path)}&id_token=${encodeURIComponent(idToken)}`;
     const res = await fetch(url);
